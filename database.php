@@ -3,19 +3,24 @@
 class database {
 
     private $data;
+    
     private $dbname;
+    private $dataBaseType = "mysql";
     private $host = "localhost";
     private $user = "root";
     private $password = "4FdL,1fE";
     private $connection;
+    
     private $errorMessage;
+    
     private $currentParams;
     private $currentQuery;
     private $lastParams;
     private $lastQuery;
+    private $lastInsertedID;
     private $debugMode = false;
 
-    public function __construct($dbname, $host = null, $user = null, $password = null) {
+    public function __construct($dbname, $dbtype = null, $host = null, $user = null, $password = null) {
         if (!empty($host)) {
             $this->host = $host;
         }
@@ -25,8 +30,12 @@ class database {
         if (!empty($password)) {
             $this->password = $password;
         }
+        if (!empty($type)) {
+            $this->dataBaseType = $dbtype;
+        }
+        
         $this->dbname = $dbname;
-        $connectionString = "mysql:host=" . $this->host . ";dbname=" . $this->dbname . ";charset=utf8";
+        $connectionString = $this->dataBaseType . ":host=" . $this->host . ";dbname=" . $this->dbname . ";charset=utf8";
         $this->connection = new PDO($connectionString, $this->user, $this->password);
         $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::CASE_NATURAL);
         $this->connection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
