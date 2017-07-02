@@ -3,7 +3,6 @@
 class database {
 
     private $data;
-    
     private $dataBaseName;
     private $dataBaseType = "mysql";
     private $host = "localhost";
@@ -11,37 +10,29 @@ class database {
     private $password;
     private $charSet = "utf8";
     private $port = "3306";
-    
     private $connection;
     private $errorMessage;
-    
     private $currentParams;
     private $currentQuery;
     private $lastParams;
     private $lastQuery;
-    
     private $numbersOfQueries = 0;
     private $numberOfSuccessfulQueries = 0;
     private $numberOfUnsuccessfulQueries = 0;
-    
     private $numberOfSelectQueries = 0;
     private $numberOfSuccessfulSelectQueries = 0;
     private $numberOfUnsuccessfulSelectQueries = 0;
-    
     private $numberOfInsertQueries = 0;
     private $numberOfSuccessfulInsertQueries = 0;
     private $numberOfUnsuccessfulInsertQueries = 0;
-    
     private $numberOfUpdateQueries = 0;
     private $numberOfSuccessfulUpdateQueries = 0;
     private $numberOfUnsuccessfulUpdateQueries = 0;
-    
     private $numberOfDeleteQueries = 0;
     private $numberOfSuccessfulDeleteQueries = 0;
     private $numberOfUnsuccessfulDeleteQueries = 0;
-    
     private $lastInsertedID;
-    
+    private $keyword;
     private $debugMode = false;
 
     /**
@@ -108,6 +99,8 @@ class database {
                 break;
             case "port" : return $this->port;
                 break;
+            case "numberOfDeleteQueries" : return $this->numberOfDeleteQueries;
+                break;
         }
     }
 
@@ -128,35 +121,57 @@ class database {
             $this->lastQuery = $query;
         }
         $this->errorMessage = false;
-        $firstWord = explode(' ', $this->lastQuery)[0];
-        if ("select" === strtolower($firstWord)) {
-            if (empty($params) && empty($this->currentParams)) {
-                $this->executeSelectWithoutParams();
-            } else {
-                $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
-                $this->executeSelectWithParams();
-            }
-        } else {
-            if (empty($params) && empty($this->currentParams)) {
-                $this->executeDeleteInsetUpdateWithoutParams();
-            } else {
-                $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
-                $this->executeDeleteInsertUpdateWithParams();
-            }
+        $this->numbersOfQueries++;
+        $this->keyword = strtolower(explode(' ', $this->lastQuery)[0]);
+        switch ($this->keyword) {
+            case "select" :
+                $this->numberOfSelectQueries++;
+                if (empty($params) && empty($this->currentParams)) {
+                    $this->executeSelectWithoutParams();
+                } else {
+                    $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
+                    $this->executeSelectWithParams();
+                }
+                break;
+            case "delete": $this->numberOfDeleteQueries++;
+            case "insert" : $this->numberOfInsertQueries++;
+            case "update":$this->numberOfUpdateQueries++;
+                if (empty($params) && empty($this->currentParams)) {
+                    $this->executeDeleteInsetUpdateWithoutParams();
+                } else {
+                    $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
+                    $this->executeDeleteInsertUpdateWithParams();
+                }
+                break;
         }
         return $this;
     }
 
-    public function getFirstResult() {
-        return array_slice($this->data, 0, 1);
-    }
-
-    public function getLastResult() {
-        return array_slice($this->data, -1);
-    }
-
     public function getResult() {
         $this->displayErrorMessage();
+        if ($this->val) {
+            switch ($this->keyword) {
+                case "select" :$this->numberOfSuccessfulSelectQueries++;
+                    break;
+                case "delete": $this->numberOfSuccessfulDeleteQueries++;
+                    break;
+                case "insert" : $this->numberOfSuccessfulInsertQueries++;
+                    break;
+                case "update":$this->numberOfSuccessfulUpdateQueries++;
+                    break;
+            }
+        } else {
+            switch ($this->keyword) {
+                case "select" :$this->numberOfUnsuccessfulSelectQueries++;
+                    break;
+                case "delete": $this->numberOfUnsuccessfulDeleteQueries++;
+                    break;
+                case "insert" : $this->numberOfUnsuccessfulInsertQueries++;
+                    break;
+                case "update":$this->numberOfUnsuccessfulUpdateQueries++;
+                    break;
+            }
+        }
         return $this->data;
     }
 
@@ -240,4 +255,5 @@ class database {
         }
         return $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
     }
+
 }
