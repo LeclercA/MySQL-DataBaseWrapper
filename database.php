@@ -3,7 +3,6 @@
 class database {
 
     private $data;
-    
     private $dataBaseName;
     private $dataBaseType = "mysql";
     private $host = "localhost";
@@ -11,10 +10,8 @@ class database {
     private $password;
     private $charSet = "utf8";
     private $port = "3306";
-    
     private $connection;
     private $errorMessage;
-    
     private $currentParams;
     private $currentQuery;
     private $lastParams;
@@ -37,67 +34,58 @@ class database {
      *          password : the password to connect to the database [no default value]
      */
     public function __construct($options = null) {
-        $dataBaseString = "";
-        if (!empty($options["dataBaseType"]) && isset($options["dataBaseType"])) {
-            $this->dataBaseType = $options["dataBaseType"];
-        }
-        if (!empty($options["dataBaseName"]) && isset($options["dataBaseName"])) {
-            $this->dataBaseName = $options["dataBaseName"];
-            $dataBaseString = ";dbname=" . $this->dataBaseName;
-        }
-
-        if (!empty($options["host"]) && isset($options["host"])) {
-            $this->host = $options["host"];
-        }
-
-        if (!empty($options["charSet"]) && isset($options["charSet"])) {
-            $this->charSet = $options["charSet"];
-        }
-        if (!empty($options["port"]) && isset($options["port"])) {
-            $this->port = $options["port"];
-        }
-        if (!empty($options["user"]) && isset($options["user"])) {
-            $this->user = $options["user"];
-        }
-        if (!empty($options["password"]) && isset($options["password"])) {
-            $this->password = $options["password"];
-        }
-
-        $connectionString = $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
+        $connectionString = $this->contructSetter($options);
         $this->connection = new PDO($connectionString, $this->user, $this->password);
         if ($this->connection) {
+            //placeholder
             echo "success";
         } else {
+            //placeholder
             echo "no success";
         }
+        //placeholder
         $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::CASE_NATURAL);
         $this->connection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     }
-    
+
     public function __set($name, $value) {
-        switch($name){
-            case "dataBaseName" : $this->dataBaseName = $value;break;
-            case "dataBaseType" : $this->dataBaseType = $value;break;
-            case "host" : $this->host = $value;break;
-            case "user" : $this->user = $value;break;
-            case "password" : $this->password = $value;break;
-            case "charSet" : $this->charSet = $value;break;
-            case "port" : $this->port = $value;break;
+        switch ($name) {
+            case "dataBaseName" : $this->dataBaseName = $value;
+                break;
+            case "dataBaseType" : $this->dataBaseType = $value;
+                break;
+            case "host" : $this->host = $value;
+                break;
+            case "user" : $this->user = $value;
+                break;
+            case "password" : $this->password = $value;
+                break;
+            case "charSet" : $this->charSet = $value;
+                break;
+            case "port" : $this->port = $value;
+                break;
         }
     }
 
     public function __get($name) {
-        switch($name){
-            case "dataBaseName" : return $this->dataBaseName;break;
-            case "dataBaseType" : return $this->dataBaseType;break;
-            case "host" : return $this->host;break;
-            case "user" : return $this->user;break;
-            case "password" : return $this->password;break;
-            case "charSet" : return $this->charSet;break;
-            case "port" : return $this->port;break;
+        switch ($name) {
+            case "dataBaseName" : return $this->dataBaseName;
+                break;
+            case "dataBaseType" : return $this->dataBaseType;
+                break;
+            case "host" : return $this->host;
+                break;
+            case "user" : return $this->user;
+                break;
+            case "password" : return $this->password;
+                break;
+            case "charSet" : return $this->charSet;
+                break;
+            case "port" : return $this->port;
+                break;
         }
     }
-    
+
     public function query($query) {
         $this->currentQuery = $query;
         return $this;
@@ -185,20 +173,46 @@ class database {
         }
     }
 
-    private function displayErrorMessage(){
+    private function displayErrorMessage() {
         if ($this->errorMessage && $this->debugMode) {
             print_r($this->errorMessage);
             echo $this->lastQuery;
             print_r($this->lastParams);
         }
     }
+
     /**
      *
-     * @param Bool $var. TRUE if want want error message, FALSE if you don't want error message */
+     * @param Bool $var TRUE if want want error message, FALSE if you don't want error message
+     */
     public function setDebugMode($var) {
         $this->debugMode = $var;
     }
-    
-    
 
+    private function contructSetter($options) {
+        $dataBaseString = "";
+        if (!empty($options["dataBaseType"]) && isset($options["dataBaseType"])) {
+            $this->dataBaseType = $options["dataBaseType"];
+        }
+        if (!empty($options["dataBaseName"]) && isset($options["dataBaseName"])) {
+            $this->dataBaseName = $options["dataBaseName"];
+            $dataBaseString = ";dbname=" . $this->dataBaseName;
+        }
+        if (!empty($options["host"]) && isset($options["host"])) {
+            $this->host = $options["host"];
+        }
+        if (!empty($options["charSet"]) && isset($options["charSet"])) {
+            $this->charSet = $options["charSet"];
+        }
+        if (!empty($options["port"]) && isset($options["port"])) {
+            $this->port = $options["port"];
+        }
+        if (!empty($options["user"]) && isset($options["user"])) {
+            $this->user = $options["user"];
+        }
+        if (!empty($options["password"]) && isset($options["password"])) {
+            $this->password = $options["password"];
+        }
+        return $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
+    }
 }
