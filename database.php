@@ -3,6 +3,7 @@
 class database {
 
     private $data;
+    
     private $dataBaseName;
     private $dataBaseType = "mysql";
     private $host = "localhost";
@@ -10,13 +11,37 @@ class database {
     private $password;
     private $charSet = "utf8";
     private $port = "3306";
+    
     private $connection;
     private $errorMessage;
+    
     private $currentParams;
     private $currentQuery;
     private $lastParams;
     private $lastQuery;
+    
+    private $numbersOfQueries = 0;
+    private $numberOfSuccessfulQueries = 0;
+    private $numberOfUnsuccessfulQueries = 0;
+    
+    private $numberOfSelectQueries = 0;
+    private $numberOfSuccessfulSelectQueries = 0;
+    private $numberOfUnsuccessfulSelectQueries = 0;
+    
+    private $numberOfInsertQueries = 0;
+    private $numberOfSuccessfulInsertQueries = 0;
+    private $numberOfUnsuccessfulInsertQueries = 0;
+    
+    private $numberOfUpdateQueries = 0;
+    private $numberOfSuccessfulUpdateQueries = 0;
+    private $numberOfUnsuccessfulUpdateQueries = 0;
+    
+    private $numberOfDeleteQueries = 0;
+    private $numberOfSuccessfulDeleteQueries = 0;
+    private $numberOfUnsuccessfulDeleteQueries = 0;
+    
     private $lastInsertedID;
+    
     private $debugMode = false;
 
     /**
