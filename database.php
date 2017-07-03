@@ -18,19 +18,14 @@ class database {
     private $lastQuery;
     private $numbersOfQueries = 0;
     private $numberOfSuccessfulQueries = 0;
-    private $numberOfUnsuccessfulQueries = 0;
     private $numberOfSelectQueries = 0;
     private $numberOfSuccessfulSelectQueries = 0;
-    private $numberOfUnsuccessfulSelectQueries = 0;
     private $numberOfInsertQueries = 0;
     private $numberOfSuccessfulInsertQueries = 0;
-    private $numberOfUnsuccessfulInsertQueries = 0;
     private $numberOfUpdateQueries = 0;
     private $numberOfSuccessfulUpdateQueries = 0;
-    private $numberOfUnsuccessfulUpdateQueries = 0;
     private $numberOfDeleteQueries = 0;
     private $numberOfSuccessfulDeleteQueries = 0;
-    private $numberOfUnsuccessfulDeleteQueries = 0;
     private $lastInsertedID;
     private $keyword;
     private $debugMode = false;
@@ -149,7 +144,7 @@ class database {
 
     public function getResult() {
         $this->displayErrorMessage();
-        if ($this->val) {
+        if ($this->data) {
             switch ($this->keyword) {
                 case "select" :$this->numberOfSuccessfulSelectQueries++;
                     break;
@@ -160,18 +155,8 @@ class database {
                 case "update":$this->numberOfSuccessfulUpdateQueries++;
                     break;
             }
-        } else {
-            switch ($this->keyword) {
-                case "select" :$this->numberOfUnsuccessfulSelectQueries++;
-                    break;
-                case "delete": $this->numberOfUnsuccessfulDeleteQueries++;
-                    break;
-                case "insert" : $this->numberOfUnsuccessfulInsertQueries++;
-                    break;
-                case "update":$this->numberOfUnsuccessfulUpdateQueries++;
-                    break;
-            }
-        }
+            $this->numberOfSuccessfulQueries++;
+        } 
         return $this->data;
     }
 
@@ -255,5 +240,4 @@ class database {
         }
         return $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
     }
-
 }
