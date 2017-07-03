@@ -75,6 +75,28 @@ class database {
                 break;
             case "port" : $this->port = $value;
                 break;
+            case "debugMode" : $this->debugBug = $value;
+                break;
+            case "numberOfQueries" : $this->numberOfQueries = $value;
+                break;
+            case "numberOfSuccessfulQueries" : return $this->numberOfSuccessfulQueries;
+                break;
+            case "numbersOfSelectQueries" : return $this->numbersOfSelectQueries;
+                break;
+            case "numberOfSuccessfulSelectQueries" : return $this->numberOfSuccessfulSelectQueries;
+                break;
+            case "numbersOfDeleteQueries" : return $this->numbersOfDeleteQueries;
+                break;
+            case "numberOfSuccessfulDeleteQueries" : return $this->numberOfSuccessfulDeleteQueries;
+                break;
+            case "numbersOfInsertQueries" : return $this->numbersOfInsertQueries;
+                break;
+            case "numberOfSuccessfulInsertQueries" : return $this->numberOfSuccessfulInsertQueries;
+                break;
+            case "numbersOfUpdateQueries" : return $this->numbersOfUpdateQueries;
+                break;
+            case "numberOfSuccessfulUpdateQueries" : return $this->numberOfSuccessfulUpdateQueries;
+                break;
         }
     }
 
@@ -94,7 +116,7 @@ class database {
                 break;
             case "port" : return $this->port;
                 break;
-            case "numberOfDeleteQueries" : return $this->numberOfDeleteQueries;
+            case "numbersOfQueries" : return $this->numbersOfQueries;
                 break;
         }
     }
@@ -156,7 +178,7 @@ class database {
                     break;
             }
             $this->numberOfSuccessfulQueries++;
-        } 
+        }
         return $this->data;
     }
 
@@ -240,4 +262,5 @@ class database {
         }
         return $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
     }
+
 }
