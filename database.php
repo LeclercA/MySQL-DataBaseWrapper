@@ -226,14 +226,6 @@ class database {
         }
     }
 
-    /**
-     *
-     * @param Bool $var TRUE if want want error message, FALSE if you don't want error message
-     */
-    public function setDebugMode($var) {
-        $this->debugMode = $var;
-    }
-
     private function contructSetter($options) {
         $dataBaseString = "";
         if (!empty($options["dataBaseType"]) && isset($options["dataBaseType"])) {
