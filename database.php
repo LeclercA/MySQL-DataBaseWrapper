@@ -83,39 +83,22 @@ class database {
     public function __get($name) {
         switch ($name) {
             case "dataBaseName" : return $this->dataBaseName;
-                break;
             case "dataBaseType" : return $this->dataBaseType;
-                break;
             case "host" : return $this->host;
-                break;
             case "user" : return $this->user;
-                break;
             case "password" : return $this->password;
-                break;
             case "charSet" : return $this->charSet;
-                break;
             case "port" : return $this->port;
-                break;
-            case "numberOfQueries" : $this->numberOfQueries = $value;
-                break;
+            case "numberOfQueries" : return $this->numberOfQueries;
             case "numberOfSuccessfulQueries" : return $this->numberOfSuccessfulQueries;
-                break;
             case "numbersOfSelectQueries" : return $this->numbersOfSelectQueries;
-                break;
             case "numberOfSuccessfulSelectQueries" : return $this->numberOfSuccessfulSelectQueries;
-                break;
             case "numbersOfDeleteQueries" : return $this->numbersOfDeleteQueries;
-                break;
             case "numberOfSuccessfulDeleteQueries" : return $this->numberOfSuccessfulDeleteQueries;
-                break;
             case "numbersOfInsertQueries" : return $this->numbersOfInsertQueries;
-                break;
             case "numberOfSuccessfulInsertQueries" : return $this->numberOfSuccessfulInsertQueries;
-                break;
             case "numbersOfUpdateQueries" : return $this->numbersOfUpdateQueries;
-                break;
             case "numberOfSuccessfulUpdateQueries" : return $this->numberOfSuccessfulUpdateQueries;
-                break;
         }
     }
 
