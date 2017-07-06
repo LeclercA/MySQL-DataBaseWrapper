@@ -3,13 +3,15 @@
 class database {
 
     private $data;
-    private $dataBaseName;
-    private $dataBaseType = "mysql";
-    private $host = "localhost";
-    private $user = "root";
-    private $password;
-    private $charSet = "utf8";
-    private $port = "3306";
+    
+    public $dataBaseName;
+    public $dataBaseType = "mysql";
+    public $host = "localhost";
+    public $user = "root";
+    public $password;
+    public $charSet = "utf8";
+    public $port = "3306";
+    
     private $connection;
     private $errorMessage;
     private $currentParams;
@@ -28,7 +30,8 @@ class database {
     private $numberOfSuccessfulDeleteQueries = 0;
     private $lastInsertedID;
     private $keyword;
-    private $debugMode = false;
+    
+    public $debugMode = false;
 
     /**
      * Constructor
@@ -60,35 +63,11 @@ class database {
     }
 
     public function __set($name, $value) {
-        switch ($name) {
-            case "dataBaseName" : $this->dataBaseName = $value;
-                break;
-            case "dataBaseType" : $this->dataBaseType = $value;
-                break;
-            case "host" : $this->host = $value;
-                break;
-            case "user" : $this->user = $value;
-                break;
-            case "password" : $this->password = $value;
-                break;
-            case "charSet" : $this->charSet = $value;
-                break;
-            case "port" : $this->port = $value;
-                break;
-            case "debugMode" : $this->debugBug = $value;
-                break;
-        }
+        
     }
 
     public function __get($name) {
         switch ($name) {
-            case "dataBaseName" : return $this->dataBaseName;
-            case "dataBaseType" : return $this->dataBaseType;
-            case "host" : return $this->host;
-            case "user" : return $this->user;
-            case "password" : return $this->password;
-            case "charSet" : return $this->charSet;
-            case "port" : return $this->port;
             case "numberOfQueries" : return $this->numberOfQueries;
             case "numberOfSuccessfulQueries" : return $this->numberOfSuccessfulQueries;
             case "numbersOfSelectQueries" : return $this->numbersOfSelectQueries;
