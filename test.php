@@ -12,5 +12,6 @@ $options = [
 ];
 
 $db = new database($options);
-$db->execute("DELETE FROM employes")->getResult();
-echo $db->numberOfDeleteQueries;
+$result = $db->execute("DELETE FROM employes")->getResult();
+echo $result;
+echo $db->numberOfSuccessfulDeleteQueries;

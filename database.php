@@ -3,7 +3,6 @@
 class database {
 
     private $data;
-    
     public $dataBaseName;
     public $dataBaseType = "mysql";
     public $host = "localhost";
@@ -11,8 +10,8 @@ class database {
     public $password;
     public $charSet = "utf8";
     public $port = "3306";
-    
     private $connection;
+    private $PDO;
     private $errorMessage;
     private $currentParams;
     private $currentQuery;
@@ -28,9 +27,8 @@ class database {
     private $numberOfSuccessfulUpdateQueries = 0;
     private $numberOfDeleteQueries = 0;
     private $numberOfSuccessfulDeleteQueries = 0;
-    private $lastInsertedID;
+    private $lastId;
     private $keyword;
-    
     public $debugMode = false;
 
     /**
@@ -70,13 +68,13 @@ class database {
         switch ($name) {
             case "numberOfQueries" : return $this->numberOfQueries;
             case "numberOfSuccessfulQueries" : return $this->numberOfSuccessfulQueries;
-            case "numbersOfSelectQueries" : return $this->numbersOfSelectQueries;
+            case "numberOfSelectQueries" : return $this->numberOfSelectQueries;
             case "numberOfSuccessfulSelectQueries" : return $this->numberOfSuccessfulSelectQueries;
-            case "numbersOfDeleteQueries" : return $this->numbersOfDeleteQueries;
+            case "numberOfDeleteQueries" : return $this->numberOfDeleteQueries;
             case "numberOfSuccessfulDeleteQueries" : return $this->numberOfSuccessfulDeleteQueries;
-            case "numbersOfInsertQueries" : return $this->numbersOfInsertQueries;
+            case "numberOfInsertQueries" : return $this->numberOfInsertQueries;
             case "numberOfSuccessfulInsertQueries" : return $this->numberOfSuccessfulInsertQueries;
-            case "numbersOfUpdateQueries" : return $this->numbersOfUpdateQueries;
+            case "numberOfUpdateQueries" : return $this->numberOfUpdateQueries;
             case "numberOfSuccessfulUpdateQueries" : return $this->numberOfSuccessfulUpdateQueries;
         }
     }
@@ -143,21 +141,21 @@ class database {
     }
 
     private function executeSelectWithoutParams() {
-        $pdoObj = $this->connection->query($this->lastQuery);
+        $this->PDO = $this->connection->query($this->lastQuery);
         if ($this->connection->errorCode() !== "00000") {
             $this->errorMessage = $this->connection->errorInfo();
         } else {
-            $this->data = $pdoObj->fetchAll(PDO::FETCH_ASSOC);
+            $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
         }
     }
 
     private function executeSelectWithParams() {
-        $pdoObj = $this->connection->prepare($this->lastQuery);
-        if (!$pdoObj) {
-            $this->errorMessage = $pdoObj->errorInfo();
+        $this->PDO = $this->connection->prepare($this->lastQuery);
+        if (!$this->PDO) {
+            $this->errorMessage = $this->PDO->errorInfo();
         } else {
-            $pdoObj->execute($this->lastParams);
-            $this->data = $pdoObj->fetchAll(PDO::FETCH_ASSOC);
+            $this->PDO->execute($this->lastParams);
+            $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
         }
     }
 
@@ -167,16 +165,17 @@ class database {
             $this->errorMessage = $this->connection->errorInfo();
         } else {
             $this->data = $val;
+            $this->lastInsertedId();
         }
     }
 
     private function executeDeleteInsertUpdateWithParams() {
-        $pdoObj = $this->connection->prepare($this->lastQuery);
-        if (!$pdoObj) {
-            $this->errorMessage = $pdoObj->errorInfo();
+        $this->PDO = $this->connection->prepare($this->lastQuery);
+        if (!$this->PDO) {
+            $this->errorMessage = $this->PDO->errorInfo();
         } else {
-            $val = $pdoObj->execute($this->lastParams);
-            $this->data = $val;
+            $this->data = $this->PDO->execute($this->lastParams);
+            $this->lastInsertedId();
         }
     }
 
@@ -213,6 +212,12 @@ class database {
             $this->password = $options["password"];
         }
         return $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
+    }
+
+    private function lastInsertedId() {
+        if ($this->keyword === 'interne') {
+            $this->lastId = $this->connection->lastInsertId();
+        }
     }
 
 }
