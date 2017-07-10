@@ -17,4 +17,6 @@ echo $result;
 echo $db->numberOfSuccessfulDeleteQueries;
 
 //exemple of insertFromArray();
+//will oupout 'INSERT INTO tasks (id, name, age) VALUES (NULL, :name, :age)'
+//with params [":name" => "bob, "age" => 12]
 $db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12]]);
