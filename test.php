@@ -15,3 +15,6 @@ $db = new database($options);
 $result = $db->execute("DELETE FROM employes")->getResult();
 echo $result;
 echo $db->numberOfSuccessfulDeleteQueries;
+
+//exemple of insertFromArray();
+$db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12]]);
