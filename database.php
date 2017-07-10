@@ -17,7 +17,6 @@ class database {
     private $currentQuery;
     private $lastParams;
     private $lastQuery;
-    private $rows;
     private $numbersOfQueries = 0;
     private $numberOfSuccessfulQueries = 0;
     private $numberOfSelectQueries = 0;
@@ -28,7 +27,6 @@ class database {
     private $numberOfSuccessfulUpdateQueries = 0;
     private $numberOfDeleteQueries = 0;
     private $numberOfSuccessfulDeleteQueries = 0;
-    private $lastId;
     private $keyword;
     public $debugMode = false;
 
@@ -62,7 +60,7 @@ class database {
     }
 
     public function __set($name, $value) {
-
+        
     }
 
     public function __get($name) {
@@ -77,8 +75,8 @@ class database {
             case "numberOfSuccessfulInsertQueries" : return $this->numberOfSuccessfulInsertQueries;
             case "numberOfUpdateQueries" : return $this->numberOfUpdateQueries;
             case "numberOfSuccessfulUpdateQueries" : return $this->numberOfSuccessfulUpdateQueries;
-            case "lastId" : return $this->lastId;
-            case "rows" : return $this->rows;
+            case "lastId" : return $this->PDO->lastInsertId();
+            case "rows" : return $this->PDO->rowCount();
         }
     }
 
@@ -128,13 +126,13 @@ class database {
     public function getResult($fetchMethod = null) {
         $this->displayErrorMessage();
 
-        if ($this->keyword === "select") {
-            if ($fetchMethod === "firstRow") {
-                $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
-            } else {
-                $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
-            }
-        }
+//        if ($this->keyword === "select") {
+//            if ($fetchMethod === "firstRow") {
+//                $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
+//            } else {
+//                $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
+//            }
+//        }
 
         if ($this->data) {
             switch ($this->keyword) {
@@ -149,7 +147,7 @@ class database {
             }
             $this->numberOfSuccessfulQueries++;
         }
-        $this->rows = $this->PDO->rowCount();
+        print_r($this->data);
         return $this->data;
     }
 
@@ -157,6 +155,8 @@ class database {
         $this->PDO = $this->connection->query($this->lastQuery);
         if ($this->connection->errorCode() !== "00000") {
             $this->errorMessage = $this->connection->errorInfo();
+        } else {
+            $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
         }
     }
 
@@ -265,6 +265,7 @@ class database {
 
         foreach ($realValues as $field => $value) {
             if ($multiple || is_array($value)) {
+                $multiple = true;
                 foreach ($value as $multipleField => $multipleValue) {
                     if (!$multipleIncrementation) {
                         $columns .= $multipleField . ',';
@@ -304,7 +305,7 @@ class database {
      * @return void No return, calls $this->execute;
      */
     public function updateFromArray($params) {
-
+        
     }
 
 }
