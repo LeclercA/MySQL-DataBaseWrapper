@@ -14,9 +14,10 @@ class database {
     private $PDO;
     private $errorMessage;
     private $currentParams;
-    public $currentQuery;
+    private $currentQuery;
     private $lastParams;
     private $lastQuery;
+    private $rows;
     private $numbersOfQueries = 0;
     private $numberOfSuccessfulQueries = 0;
     private $numberOfSelectQueries = 0;
@@ -77,6 +78,7 @@ class database {
             case "numberOfUpdateQueries" : return $this->numberOfUpdateQueries;
             case "numberOfSuccessfulUpdateQueries" : return $this->numberOfSuccessfulUpdateQueries;
             case "lastId" : return $this->lastId;
+            case "rows" : return $this->rows;
         }
     }
 
@@ -123,7 +125,7 @@ class database {
         return $this;
     }
 
-    public function getResult($fetchMethod) {
+    public function getResult($fetchMethod = null) {
         $this->displayErrorMessage();
 
         if ($this->keyword === "select") {
@@ -147,6 +149,7 @@ class database {
             }
             $this->numberOfSuccessfulQueries++;
         }
+        $this->rows = $this->PDO->rowCount();
         return $this->data;
     }
 
@@ -233,28 +236,58 @@ class database {
      * @param array $params
      *      table => the name of the table where you want to insert the data;
      *      values => an array where the keys are your databaseField and the values are the values to insert
-     *      notUseDefaultId => bool. false or null if you want to use 'id' as your auto-increment primary key, true if not
-     *
+     *      id =>  name of the id. default : id
+     *      mutiple => bool. false or null if you only have one row to insert, true otherwise and if values is an array of array. It will detect array of array automaticly
+     *      reverse => bool. false or null if the values are [[name => [0 => 'bob',1=> 'jacques'], [age] => [0 => 12,1=> 20]], true if they are like [["name" => "bob", "age" => 12], ["name" => "jacques", "age" => 20]]
      * @example void $db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12]])->execute();
      * @return database this
      *
      */
     public function insertFromArray($params) {
-        $table = $params["table"];
         $arrayValues = [];
-        $query = "INSERT INTO $table";
-        $columns = isset($params["notUseDefaultId"]) && $params["notUseDefaultId"] ? '(' : "(id,";
-        $values = isset($params["notUseDefaultId"]) && $params["notUseDefaultId"] ? '(' : "(NULL,";
+        $realValues;
+        $query = "INSERT INTO " . $params["table"];
+        $columns = isset($params["id"]) && $params["id"] ? '(' . $params["id"] : "(id,";
+        $defaultValues = "(NULL,";
+        $values = $defaultValues;
+        $multiple = isset($params["multiple"]) && $params["multiple"];
+        $multipleIncrementation = 0;
 
+        if (!isset($params["reverse"]) || !$params["reverse"]) {
+            foreach ($params["values"] as $reverseKey => $reverseValue) {
+                foreach ($reverseValue as $rrKey => $rrValue) {
+                    $realValues[$rrKey][$reverseKey] = $rrValue;
+                }
+            }
+        } else {
+            $realValues = $params["values"];
+        }
 
-        foreach ($params["values"] as $field => $value) {
-            $columns .= $field . ',';
-            $values .= ":$field,";
-            $arrayValues[":$field"] = $value;
+        foreach ($realValues as $field => $value) {
+            if ($multiple || is_array($value)) {
+                foreach ($value as $multipleField => $multipleValue) {
+                    if (!$multipleIncrementation) {
+                        $columns .= $multipleField . ',';
+                    }
+                    $values .= ":$multipleField" . "$multipleIncrementation,";
+                    $arrayValues[":$multipleField" . $multipleIncrementation] = $multipleValue;
+                }
+                $values = substr($values, 0, -1) . ")";
+                $values .= "," . $defaultValues;
+                $multipleIncrementation++;
+            } else {
+                $columns .= $field . ',';
+                $values .= ":$field,";
+                $arrayValues[":$field"] = $value;
+            }
+        }
+
+        if ($multiple) {
+            $values = substr($values, 0, -(strlen($defaultValues)) - 1);
+        } else {
+            $values = substr($values, 0, -1) . ")";
         }
         $columns = substr($columns, 0, -1) . ")";
-        $values = substr($values, 0, -1) . ")";
-
         $query .= " $columns VALUES $values";
         $this->currentQuery = $query;
         $this->currentParams = $arrayValues;
