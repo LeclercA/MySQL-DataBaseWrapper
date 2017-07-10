@@ -220,12 +220,13 @@ class database {
             $this->lastId = $this->connection->lastInsertId();
         }
     }
-
+    //TODO Add a parameter when the user wants to use his own id
     /**
      *  Takes an array as parameter and insert the data into the database
      * @param array $params
      *      table => the name of the table where you want to insert the data;
-     *      values => [nameOfValues => value, ...]
+     *      values => an array where the keys are your databaseField and the values are the values to insert
+     *      Take note that the default id is 'id' and is considered NULL. Will change in a future update to allow users to add his own id
      * @return void No return, calls $this->execute;
      */
     public function insertFromArray($params) {
@@ -246,5 +247,16 @@ class database {
         $this->execute($query, $arrayValues);
     }
 
-}
+    /**
+     *  Takes an array as parameter and update the data into the database
+     * @param array $params
+     *      table => the name of the table where you want to update the data;
+     *      values => an array where the keys are your databaseField and the values are the values to update
+     *      condition => and array where the key is the databaseField and to value is the expression to look for
+     * @return void No return, calls $this->execute;
+     */
+    public function updateFromArray($params) {
 
+    }
+
+}
