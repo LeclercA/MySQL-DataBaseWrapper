@@ -14,7 +14,7 @@ class database {
     private $PDO;
     private $errorMessage;
     private $currentParams;
-    private $currentQuery;
+    public $currentQuery;
     private $lastParams;
     private $lastQuery;
     private $numbersOfQueries = 0;
@@ -76,6 +76,7 @@ class database {
             case "numberOfSuccessfulInsertQueries" : return $this->numberOfSuccessfulInsertQueries;
             case "numberOfUpdateQueries" : return $this->numberOfUpdateQueries;
             case "numberOfSuccessfulUpdateQueries" : return $this->numberOfSuccessfulUpdateQueries;
+            case "lastId" : return $this->lastId;
         }
     }
 
@@ -122,8 +123,17 @@ class database {
         return $this;
     }
 
-    public function getResult() {
+    public function getResult($fetchMethod) {
         $this->displayErrorMessage();
+
+        if ($this->keyword === "select") {
+            if ($fetchMethod === "firstRow") {
+                $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
+            } else {
+                $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
+            }
+        }
+
         if ($this->data) {
             switch ($this->keyword) {
                 case "select" :$this->numberOfSuccessfulSelectQueries++;
@@ -144,8 +154,6 @@ class database {
         $this->PDO = $this->connection->query($this->lastQuery);
         if ($this->connection->errorCode() !== "00000") {
             $this->errorMessage = $this->connection->errorInfo();
-        } else {
-            $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
         }
     }
 
@@ -155,7 +163,6 @@ class database {
             $this->errorMessage = $this->PDO->errorInfo();
         } else {
             $this->PDO->execute($this->lastParams);
-            $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
         }
     }
 
@@ -216,25 +223,29 @@ class database {
     }
 
     private function lastInsertedId() {
-        if ($this->keyword === 'interne') {
+        if ($this->keyword === 'insert') {
             $this->lastId = $this->connection->lastInsertId();
         }
     }
-    //TODO Add a parameter when the user wants to use his own id
+
     /**
      *  Takes an array as parameter and insert the data into the database
      * @param array $params
      *      table => the name of the table where you want to insert the data;
      *      values => an array where the keys are your databaseField and the values are the values to insert
-     *      Take note that the default id is 'id' and is considered NULL. Will change in a future update to allow users to add his own id
-     * @return void No return, calls $this->execute;
+     *      notUseDefaultId => bool. false or null if you want to use 'id' as your auto-increment primary key, true if not
+     *
+     * @example void $db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12]])->execute();
+     * @return database this
+     *
      */
     public function insertFromArray($params) {
         $table = $params["table"];
         $arrayValues = [];
         $query = "INSERT INTO $table";
-        $columns = "(id,";
-        $values = "(NULL,";
+        $columns = isset($params["notUseDefaultId"]) && $params["notUseDefaultId"] ? '(' : "(id,";
+        $values = isset($params["notUseDefaultId"]) && $params["notUseDefaultId"] ? '(' : "(NULL,";
+
 
         foreach ($params["values"] as $field => $value) {
             $columns .= $field . ',';
@@ -243,8 +254,11 @@ class database {
         }
         $columns = substr($columns, 0, -1) . ")";
         $values = substr($values, 0, -1) . ")";
+
         $query .= " $columns VALUES $values";
-        $this->execute($query, $arrayValues);
+        $this->currentQuery = $query;
+        $this->currentParams = $arrayValues;
+        return $this;
     }
 
     /**
@@ -253,6 +267,7 @@ class database {
      *      table => the name of the table where you want to update the data;
      *      values => an array where the keys are your databaseField and the values are the values to update
      *      condition => and array where the key is the databaseField and to value is the expression to look for
+     *
      * @return void No return, calls $this->execute;
      */
     public function updateFromArray($params) {
