@@ -33,10 +33,10 @@ class database {
 
     /**
      * Constructor
-     * 
-     * 
+     *
+     *
      * @param array $options :
-     *      Include the following options, in no particuliar ordor : 
+     *      Include the following options, in no particuliar ordor :
      *          dataBaseName : the name of the schema [no default value]
      *          dataBaseType : the type of database [default : "mysql"]
      *          host : the name of the host [default : "localhost"]
@@ -50,10 +50,10 @@ class database {
         $this->connection = new PDO($connectionString, $this->user, $this->password);
         if ($this->connection) {
             //placeholder
-            echo "success";
+            //echo "success";
         } else {
             //placeholder
-            echo "no success";
+            //echo "no success";
         }
         //placeholder
         $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::CASE_NATURAL);
@@ -61,7 +61,7 @@ class database {
     }
 
     public function __set($name, $value) {
-        
+
     }
 
     public function __get($name) {
@@ -169,6 +169,7 @@ class database {
         }
     }
 
+    //TODO : error message when PDO is boolean
     private function executeDeleteInsertUpdateWithParams() {
         $this->PDO = $this->connection->prepare($this->lastQuery);
         if (!$this->PDO) {
@@ -220,4 +221,30 @@ class database {
         }
     }
 
+    /**
+     *  Takes an array as parameter and insert the data into the database
+     * @param array $params
+     *      table => the name of the table where you want to insert the data;
+     *      values => [nameOfValues => value, ...]
+     * @return void No return, calls $this->execute;
+     */
+    public function insertFromArray($params) {
+        $table = $params["table"];
+        $arrayValues = [];
+        $query = "INSERT INTO $table";
+        $columns = "(id,";
+        $values = "(NULL,";
+
+        foreach ($params["values"] as $field => $value) {
+            $columns .= $field . ',';
+            $values .= ":$field,";
+            $arrayValues[":$field"] = $value;
+        }
+        $columns = substr($columns, 0, -1) . ")";
+        $values = substr($values, 0, -1) . ")";
+        $query .= " $columns VALUES $values";
+        $this->execute($query, $arrayValues);
+    }
+
 }
+
