@@ -12,7 +12,8 @@ class database {
     public $port = "3306";
     private $connection;
     private $PDO;
-    private $errorMessage;
+    private $currentErrorMessage;
+    private $lastErrorMessage;
     private $currentParams;
     private $currentQuery;
     private $lastParams;
@@ -46,13 +47,10 @@ class database {
      */
     public function __construct($options = null) {
         $connectionString = $this->contructSetter($options);
-        $this->connection = new PDO($connectionString, $this->user, $this->password);
-        if ($this->connection) {
-            //placeholder
-            //echo "success";
-        } else {
-            //placeholder
-            //echo "no success";
+        try {
+            $this->connection = new PDO($connectionString, $this->user, $this->password);
+        } catch (Exception $e) {
+            trigger_error("Impossible to connect to the databse.");
         }
         //placeholder
         $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::CASE_NATURAL);
@@ -60,7 +58,7 @@ class database {
     }
 
     public function __set($name, $value) {
-
+        
     }
 
     public function __get($name) {
@@ -77,6 +75,8 @@ class database {
             case "numberOfSuccessfulUpdateQueries" : return $this->numberOfSuccessfulUpdateQueries;
             case "lastId" : return $this->connection->lastInsertId();
             case "rows" : return $this->PDO->rowCount();
+            case "currentErrorMessage" : return $this->currentErrorMessage;
+            case "lastErrorMessage" : return $this->lastErrorMessage;
         }
     }
 
@@ -91,36 +91,45 @@ class database {
     }
 
     public function execute($query = null, $params = null) {
-        if (empty($query)) {
-            $this->lastQuery = $this->currentQuery;
-        } else {
-            $this->lastQuery = $query;
+        if ($this->connection) {
+            if (empty($query)) {
+                $this->lastQuery = $this->currentQuery;
+            } else {
+                $this->lastQuery = $query;
+            }
+            $this->lastErrorMessage = $this->currentErrorMessage;
+            $this->currentErrorMessage = NULL;
+            $this->numbersOfQueries++;
+            $this->keyword = strtolower(explode(' ', $this->lastQuery)[0]);
+            switch ($this->keyword) {
+                case "select" :
+                    $this->numberOfSelectQueries++;
+                    if (empty($params) && empty($this->currentParams)) {
+                        $this->executeSelectWithoutParams();
+                    } else {
+                        $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
+                        $this->executeSelectWithParams();
+                    }
+                    break;
+                case "delete": $this->numberOfDeleteQueries++;
+                case "insert" : $this->numberOfInsertQueries++;
+                case "update":$this->numberOfUpdateQueries++;
+                    if (empty($params) && empty($this->currentParams)) {
+                        $this->executeDeleteInsetUpdateWithoutParams();
+                    } else {
+                        $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
+                        $this->executeDeleteInsertUpdateWithParams();
+                    }
+                    break;
+            }
+            return $this;
+        }else{
+           if($this->debugMode){
+               echo "No connection to the database, can't do queries";
+           }else{
+               trigger_error("No connection to the database, can't do queries");
+           }
         }
-        $this->errorMessage = false;
-        $this->numbersOfQueries++;
-        $this->keyword = strtolower(explode(' ', $this->lastQuery)[0]);
-        switch ($this->keyword) {
-            case "select" :
-                $this->numberOfSelectQueries++;
-                if (empty($params) && empty($this->currentParams)) {
-                    $this->executeSelectWithoutParams();
-                } else {
-                    $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
-                    $this->executeSelectWithParams();
-                }
-                break;
-            case "delete": $this->numberOfDeleteQueries++;
-            case "insert" : $this->numberOfInsertQueries++;
-            case "update":$this->numberOfUpdateQueries++;
-                if (empty($params) && empty($this->currentParams)) {
-                    $this->executeDeleteInsetUpdateWithoutParams();
-                } else {
-                    $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
-                    $this->executeDeleteInsertUpdateWithParams();
-                }
-                break;
-        }
-        return $this;
     }
 
     public function getResult($fetchMethod = null) {
@@ -145,53 +154,71 @@ class database {
             }
             $this->numberOfSuccessfulQueries++;
         }
-        $this->lastQuery = $this->currentQuery;
-        $this->currentQuery = "";
-        $this->lastParams = $this->currentParams;
-        $this->currentParams = "";
+        $this->resetParams();
         return $this->data;
     }
 
     private function executeSelectWithoutParams() {
-        $this->PDO = $this->connection->query($this->lastQuery);
-        if ($this->connection->errorCode() !== "00000") {
-            $this->errorMessage = $this->connection->errorInfo();
+        try {
+            $this->PDO = $this->connection->query($this->lastQuery);
+            if ($this->connection->errorCode() !== "00000") {
+                $this->currentErrorMessage = $this->connection->errorInfo();
+            }
+        } catch (Exception $e) {
+            $this->currentErrorMessage = $e;
+            throwError($e);
         }
     }
 
     private function executeSelectWithParams() {
-        $this->PDO = $this->connection->prepare($this->lastQuery);
-        if (!$this->PDO) {
-            $this->errorMessage = $this->PDO->errorInfo();
-        } else {
-            $this->PDO->execute($this->lastParams);
+        try {
+            $this->PDO = $this->connection->prepare($this->lastQuery);
+            if (!$this->PDO) {
+                $this->currentErrorMessage = $this->PDO->errorInfo();
+            } else {
+                $this->PDO->execute($this->lastParams);
+            }
+        } catch (Exception $e) {
+            $this->currentErrorMessage = $e;
+            throwError($e);
         }
     }
 
     private function executeDeleteInsetUpdateWithoutParams() {
-        $val = $this->connection->exec($this->lastQuery);
-        if ($this->connection->errorCode() !== "00000") {
-            $this->errorMessage = $this->connection->errorInfo();
-        } else {
-            $this->data = $val;
+        try {
+            $val = $this->connection->exec($this->lastQuery);
+            if ($this->connection->errorCode() !== "00000") {
+                $this->currentErrorMessage = $this->connection->errorInfo();
+            } else {
+                $this->data = $val;
+            }
+        } catch (Exception $e) {
+            $this->currentErrorMessage = $e;
+            throwError($e);
         }
     }
 
     //TODO : error message when PDO is boolean
     private function executeDeleteInsertUpdateWithParams() {
-        $this->PDO = $this->connection->prepare($this->lastQuery);
-        if (!$this->PDO) {
-            $this->errorMessage = $this->PDO->errorInfo();
-        } else {
-            $this->data = $this->PDO->execute($this->lastParams);
+        try {
+            $this->PDO = $this->connection->prepare($this->lastQuery);
+            if (!$this->PDO) {
+                $this->currentErrorMessage = $this->PDO->errorInfo();
+            } else {
+                $this->data = $this->PDO->execute($this->lastParams);
+            }
+        } catch (Exception $e) {
+            $this->currentErrorMessage = $e;
+            throwError($e);
         }
     }
 
     private function displayErrorMessage() {
-        if ($this->errorMessage && $this->debugMode) {
-            print_r($this->errorMessage);
+        if ($this->currentErrorMessage && $this->debugMode) {
+            print_r($this->currentErrorMessage);
             echo $this->lastQuery;
             print_r($this->lastParams);
+            throwError($this->currentErrorMessage);
         }
     }
 
@@ -325,4 +352,16 @@ class database {
         return $this;
     }
 
+    private function resetParams() {
+        $this->lastQuery = $this->currentQuery;
+        $this->currentQuery = NULL;
+        $this->lastParams = $this->currentParams;
+        $this->currentParams = NULL;
+        $this->lastErrorMessage = $this->currentErrorMessage;
+        $this->currentErrorMessage = NULL;
+    }
+    
+    private function throwError($error){
+        trigger_error($error);
+    }
 }
