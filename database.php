@@ -235,6 +235,7 @@ class database {
      *
      */
     public function insertFromArray($params) {
+
         $parameters = [];
         $realValues = [];
         $query = "INSERT INTO " . $params["table"];
@@ -268,7 +269,7 @@ class database {
                         $columns .= $multipleField . ',';
                     }
                     $values .= ":$multipleField" . "$multipleIncrementation,";
-                    $parameters[":$multipleField" . $multipleIncrementation] = $multipleValue;
+                    $parameters[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
                 }
                 $values = substr($values, 0, -1) . ")";
                 $values .= "," . $defaultValues;
@@ -276,7 +277,7 @@ class database {
             } else {
                 $columns .= $field . ',';
                 $values .= ":$field,";
-                $parameters[":$field"] = $value;
+                $parameters[":$field"] = empty($value) ? NULL : $value;
             }
         }
         if ($multiple) {
@@ -288,6 +289,8 @@ class database {
         $query .= " $columns VALUES $values";
         $this->currentQuery = $query;
         $this->currentParams = $parameters;
+        echo $query;
+        print_r($parameters);
         return $this;
     }
 
@@ -302,12 +305,26 @@ class database {
      */
     public function updateFromArray($params) {
         $query = "UPDATE " . $params["table"] . " SET ";
-        $set;
-        $parammeters = [];
+        $set = "";
+        $parameters = [];
+        $incrementation = 0;
+        $where = " WHERE ";
         foreach ($params["values"] as $field => $value) {
-            $set .= $field . " = " . ":$field";
-            $params[":$field"] = $value;
+            $set .= $field . " = " . ":$field$incrementation,";
+            $parameters[":$field$incrementation"] = $value;
+            $incrementation++;
         }
+
+        foreach ($params["where"] as $field => $value) {
+            $where .= $field . " = " . ":$field$incrementation ";
+            $parameters[":$field$incrementation"] = $value;
+            $incrementation++;
+        }
+        $set = substr($set, 0, -1);
+        $query .= $set . $where;
+        $this->currentQuery = $query;
+        $this->currentParams = $parameters;
+        return $this;
     }
 
 }
