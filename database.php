@@ -303,7 +303,7 @@ class database {
     public function updateFromArray($params) {
         $query = "UPDATE " . $params["table"] . " SET ";
         $set;
-        $params = [];
+        $parammeters = [];
         foreach ($params["values"] as $field => $value) {
             $set .= $field . " = " . ":$field";
             $params[":$field"] = $value;
