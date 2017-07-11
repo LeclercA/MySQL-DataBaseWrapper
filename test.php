@@ -68,3 +68,13 @@ print_r($db->execute("SELECT * FROM employes")->getResult());
  * 
  * 
  */
+
+
+$array = [
+            "table" => "tableName",
+            "values" => ["name" => ["Bob", "Jacques", "Julien", "David", "Pablo"],
+                         "department_id" => [1, 2, 3, 4, 5]
+                        ],
+            "id" => "idTableName", //your primary key that you want to be auto incremented      
+            "multiple" => true,
+];

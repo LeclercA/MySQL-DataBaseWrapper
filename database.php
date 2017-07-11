@@ -126,13 +126,13 @@ class database {
     public function getResult($fetchMethod = null) {
         $this->displayErrorMessage();
 
-//        if ($this->keyword === "select") {
-//            if ($fetchMethod === "firstRow") {
-//                $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
-//            } else {
-//                $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
-//            }
-//        }
+        if ($this->keyword === "select") {
+            if ($fetchMethod === "firstRow") {
+                $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
+            } else {
+                $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
+            }
+        }
 
         if ($this->data) {
             switch ($this->keyword) {
@@ -147,7 +147,10 @@ class database {
             }
             $this->numberOfSuccessfulQueries++;
         }
-        print_r($this->data);
+        $this->lastQuery = $this->currentQuery;
+        $this->currentQuery = "";
+        $this->lastParams = $this->currentParams;
+        $this->currentParams = "";
         return $this->data;
     }
 
@@ -155,8 +158,6 @@ class database {
         $this->PDO = $this->connection->query($this->lastQuery);
         if ($this->connection->errorCode() !== "00000") {
             $this->errorMessage = $this->connection->errorInfo();
-        } else {
-            $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
         }
     }
 
@@ -175,7 +176,6 @@ class database {
             $this->errorMessage = $this->connection->errorInfo();
         } else {
             $this->data = $val;
-            $this->lastInsertedId();
         }
     }
 
@@ -186,7 +186,6 @@ class database {
             $this->errorMessage = $this->PDO->errorInfo();
         } else {
             $this->data = $this->PDO->execute($this->lastParams);
-            $this->lastInsertedId();
         }
     }
 
@@ -225,30 +224,27 @@ class database {
         return $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
     }
 
-    private function lastInsertedId() {
-        if ($this->keyword === 'insert') {
-            $this->lastId = $this->connection->lastInsertId();
-        }
-    }
-
     /**
      *  Takes an array as parameter and insert the data into the database
      * @param array $params
      *      table => the name of the table where you want to insert the data;
      *      values => an array where the keys are your databaseField and the values are the values to insert
-     *      id =>  name of the id. default : id
-     *      mutiple => bool. false or null if you only have one row to insert, true otherwise and if values is an array of array. It will detect array of array automaticly
+     *      id =>  set the default primary key. default : id
+     *      multiple => bool. false or null if you only have one row to insert, true otherwise and if values is an array of array. It will detect array of array by magic
      *      reverse => bool. false or null if the values are [[name => [0 => 'bob',1=> 'jacques'], [age] => [0 => 12,1=> 20]], true if they are like [["name" => "bob", "age" => 12], ["name" => "jacques", "age" => 20]]
-     * @example void $db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12]])->execute();
+     * @example void $db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12], "reverse" => true])->execute();
      * @return database this
      *
      */
     public function insertFromArray($params) {
         $arrayValues = [];
-        $realValues;
         $query = "INSERT INTO " . $params["table"];
-        $columns = isset($params["id"]) && $params["id"] ? '(' . $params["id"] : "(id,";
+        $columns = "(id,";
         $defaultValues = "(NULL,";
+        if (isset($params["id"]) && !$params["id"]) {
+            $columns = '('.$params["id"];
+        }
+
         $values = $defaultValues;
         $multiple = isset($params["multiple"]) && $params["multiple"];
         $multipleIncrementation = 0;
