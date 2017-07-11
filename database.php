@@ -289,8 +289,6 @@ class database {
         $query .= " $columns VALUES $values";
         $this->currentQuery = $query;
         $this->currentParams = $parameters;
-        echo $query;
-        print_r($parameters);
         return $this;
     }
 
