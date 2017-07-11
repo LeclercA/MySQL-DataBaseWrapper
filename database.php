@@ -60,7 +60,7 @@ class database {
     }
 
     public function __set($name, $value) {
-        
+
     }
 
     public function __get($name) {
@@ -125,7 +125,6 @@ class database {
 
     public function getResult($fetchMethod = null) {
         $this->displayErrorMessage();
-
         if ($this->keyword === "select") {
             if ($fetchMethod === "firstRow") {
                 $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
@@ -133,7 +132,6 @@ class database {
                 $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
             }
         }
-
         if ($this->data) {
             switch ($this->keyword) {
                 case "select" :$this->numberOfSuccessfulSelectQueries++;
@@ -229,7 +227,7 @@ class database {
      * @param array $params
      *      table => the name of the table where you want to insert the data;
      *      values => an array where the keys are your databaseField and the values are the values to insert
-     *      id =>  set the default primary key. default : id
+     *      id =>  set the primary key. default : id, with value NULL. if set to false, no primary key with no value
      *      multiple => bool. false or null if you only have one row to insert, true otherwise and if values is an array of array. It will detect array of array by magic
      *      reverse => bool. false or null if the values are [[name => [0 => 'bob',1=> 'jacques'], [age] => [0 => 12,1=> 20]], true if they are like [["name" => "bob", "age" => 12], ["name" => "jacques", "age" => 20]]
      * @example void $db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12], "reverse" => true])->execute();
@@ -241,14 +239,17 @@ class database {
         $query = "INSERT INTO " . $params["table"];
         $columns = "(id,";
         $defaultValues = "(NULL,";
-        if (isset($params["id"]) && !$params["id"]) {
-            $columns = '('.$params["id"];
+        if (isset($params["id"])) {
+            if (!$params["id"]) {
+                $columns = '(';
+                $defaultValues = '(';
+            } else {
+                $columns = '(' . $params["id"] . ',';
+            }
         }
-
         $values = $defaultValues;
         $multiple = isset($params["multiple"]) && $params["multiple"];
         $multipleIncrementation = 0;
-
         if (!isset($params["reverse"]) || !$params["reverse"]) {
             foreach ($params["values"] as $reverseKey => $reverseValue) {
                 foreach ($reverseValue as $rrKey => $rrValue) {
@@ -258,7 +259,6 @@ class database {
         } else {
             $realValues = $params["values"];
         }
-
         foreach ($realValues as $field => $value) {
             if ($multiple || is_array($value)) {
                 $multiple = true;
@@ -278,7 +278,6 @@ class database {
                 $arrayValues[":$field"] = $value;
             }
         }
-
         if ($multiple) {
             $values = substr($values, 0, -(strlen($defaultValues)) - 1);
         } else {
@@ -301,7 +300,8 @@ class database {
      * @return void No return, calls $this->execute;
      */
     public function updateFromArray($params) {
-        
+
     }
 
 }
+
