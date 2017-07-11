@@ -75,7 +75,7 @@ class database {
             case "numberOfSuccessfulInsertQueries" : return $this->numberOfSuccessfulInsertQueries;
             case "numberOfUpdateQueries" : return $this->numberOfUpdateQueries;
             case "numberOfSuccessfulUpdateQueries" : return $this->numberOfSuccessfulUpdateQueries;
-            case "lastId" : return $this->PDO->lastInsertId();
+            case "lastId" : return $this->connection->lastInsertId();
             case "rows" : return $this->PDO->rowCount();
         }
     }
@@ -235,7 +235,8 @@ class database {
      *
      */
     public function insertFromArray($params) {
-        $arrayValues = [];
+        $parameters = [];
+        $realValues = [];
         $query = "INSERT INTO " . $params["table"];
         $columns = "(id,";
         $defaultValues = "(NULL,";
@@ -267,7 +268,7 @@ class database {
                         $columns .= $multipleField . ',';
                     }
                     $values .= ":$multipleField" . "$multipleIncrementation,";
-                    $arrayValues[":$multipleField" . $multipleIncrementation] = $multipleValue;
+                    $parameters[":$multipleField" . $multipleIncrementation] = $multipleValue;
                 }
                 $values = substr($values, 0, -1) . ")";
                 $values .= "," . $defaultValues;
@@ -275,7 +276,7 @@ class database {
             } else {
                 $columns .= $field . ',';
                 $values .= ":$field,";
-                $arrayValues[":$field"] = $value;
+                $parameters[":$field"] = $value;
             }
         }
         if ($multiple) {
@@ -286,7 +287,7 @@ class database {
         $columns = substr($columns, 0, -1) . ")";
         $query .= " $columns VALUES $values";
         $this->currentQuery = $query;
-        $this->currentParams = $arrayValues;
+        $this->currentParams = $parameters;
         return $this;
     }
 
@@ -300,8 +301,13 @@ class database {
      * @return void No return, calls $this->execute;
      */
     public function updateFromArray($params) {
-
+        $query = "UPDATE " . $params["table"] . " SET ";
+        $set;
+        $params = [];
+        foreach ($params["values"] as $field => $value) {
+            $set .= $field . " = " . ":$field";
+            $params[":$field"] = $value;
+        }
     }
 
 }
-
