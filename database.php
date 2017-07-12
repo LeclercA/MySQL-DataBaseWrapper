@@ -276,7 +276,6 @@ class database {
         $values = $defaultValues;
         $multiple = isset($params["multiple"]) && $params["multiple"];
         $multipleIncrementation = 0;
-        var_dump($this->isAssoc($params["values"]));
         if ((isset($params["reverse"]) && $params["reverse"]) || $this->isAssoc($params["values"])) {
             foreach ($params["values"] as $reverseKey => $reverseValue) {
                 foreach ($reverseValue as $rrKey => $rrValue) {
