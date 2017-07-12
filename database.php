@@ -57,10 +57,6 @@ class database {
         $this->connection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     }
 
-    public function __set($name, $value) {
-
-    }
-
     public function __get($name) {
         switch ($name) {
             case "numberOfQueries" : return $this->numberOfQueries;
@@ -255,7 +251,10 @@ class database {
      *      values => an array where the keys are your databaseField and the values are the values to insert
      *      id =>  set the primary key. default : id, with value NULL. if set to false, no primary key with no value
      *      multiple => bool. false or null if you only have one row to insert, true otherwise and if values is an array of array. It will detect array of array by magic
-     *      reverse => bool. false or null if the values are [[name => [0 => 'bob',1=> 'jacques'], [age] => [0 => 12,1=> 20]], true if they are like [["name" => "bob", "age" => 12], ["name" => "jacques", "age" => 20]]
+     *      reverse => bool. false or null or not exist if the element to insert are ready (ex : [0 => ['name'=> 'bob', 'age' => 12], 1 => ['name' => 'pablo', age => 13]] AND THAT ITS AN ASSOCIATIVE ARRAY ( index starts from 0 and go up by 1 each time)
+     *      If its an associative array, but the element are ready... nothing is going to work.
+     *      Set reverse to true if your data comes from a form (ex : ["name" => ["bob", "pablo"], "age" => [12,13]]
+     *      reverse is detected automaticly
      * @example void $db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12], "reverse" => true])->execute();
      * @return database this
      *
@@ -277,7 +276,8 @@ class database {
         $values = $defaultValues;
         $multiple = isset($params["multiple"]) && $params["multiple"];
         $multipleIncrementation = 0;
-        if (!isset($params["reverse"]) || !$params["reverse"]) {
+        var_dump($this->isAssoc($params["values"]));
+        if ((isset($params["reverse"]) && $params["reverse"]) || $this->isAssoc($params["values"])) {
             foreach ($params["values"] as $reverseKey => $reverseValue) {
                 foreach ($reverseValue as $rrKey => $rrValue) {
                     $realValues[$rrKey][$reverseKey] = $rrValue;
@@ -360,6 +360,13 @@ class database {
 
     private function throwError($error) {
         trigger_error($error);
+    }
+
+    private function isAssoc(array $arr) {
+        if (array() === $arr) {
+            return false;
+        }
+        return array_keys($arr) !== range(0, count($arr) - 1);
     }
 
 }
