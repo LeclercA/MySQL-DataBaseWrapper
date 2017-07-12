@@ -53,7 +53,7 @@ class database {
             trigger_error("Impossible to connect to the databse.");
         }
         //placeholder
-        $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::CASE_NATURAL);
+        $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->connection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     }
 
@@ -164,7 +164,7 @@ class database {
             if ($this->connection->errorCode() !== "00000") {
                 $this->currentErrorMessage = $this->connection->errorInfo();
             }
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             $this->currentErrorMessage = $e;
             $this->throwError($e);
         }
@@ -174,11 +174,11 @@ class database {
         try {
             $this->PDO = $this->connection->prepare($this->lastQuery);
             if (!$this->PDO) {
-                $this->currentErrorMessage = $this->connection->errorInfo();
+                $this->currentErrorMessage = $this->PDO->errorInfo();
             } else {
                 $this->PDO->execute($this->lastParams);
             }
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             $this->currentErrorMessage = $e;
             $this->throwError($e);
         }
@@ -192,13 +192,12 @@ class database {
             } else {
                 $this->data = $val;
             }
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             $this->currentErrorMessage = $e;
             $this->throwError($e);
         }
     }
 
-    //TODO : error message when PDO is boolean
     private function executeDeleteInsertUpdateWithParams() {
         try {
             $this->PDO = $this->connection->prepare($this->lastQuery);
@@ -207,7 +206,7 @@ class database {
             } else {
                 $this->data = $this->PDO->execute($this->lastParams);
             }
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             $this->currentErrorMessage = $e;
             $this->throwError($e);
         }
@@ -218,7 +217,7 @@ class database {
             print_r($this->currentErrorMessage);
             echo "QUERY => " . $this->lastQuery;
             print_r($this->lastParams);
-            $this->throwError($this->currentErrorMessage[2]);
+            $this->throwError($this->currentErrorMessage);
         }
     }
 
