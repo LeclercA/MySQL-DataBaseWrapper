@@ -334,12 +334,12 @@ class database {
         $where = " WHERE ";
         foreach ($params["values"] as $field => $value) {
             $set .= $field . " = " . ":$field$incrementation,";
-            $parameters[":$field$incrementation"] = $value;
+            $parameters[":$field$incrementation"] = empty($value) ? NULL : $value;
             $incrementation++;
         }
         foreach ($params["where"] as $field => $value) {
             $where .= $field . " = " . ":$field$incrementation ";
-            $parameters[":$field$incrementation"] = $value;
+            $parameters[":$field$incrementation"] = empty($value) ? NULL : $value;
             $incrementation++;
         }
         $set = substr($set, 0, -1);
