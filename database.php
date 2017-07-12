@@ -58,7 +58,7 @@ class database {
     }
 
     public function __set($name, $value) {
-        
+
     }
 
     public function __get($name) {
@@ -123,12 +123,12 @@ class database {
                     break;
             }
             return $this;
-        }else{
-           if($this->debugMode){
-               echo "No connection to the database, can't do queries";
-           }else{
-               trigger_error("No connection to the database, can't do queries");
-           }
+        } else {
+            if ($this->debugMode) {
+                echo "No connection to the database, can't do queries";
+            } else {
+                trigger_error("No connection to the database, can't do queries");
+            }
         }
     }
 
@@ -166,7 +166,7 @@ class database {
             }
         } catch (Exception $e) {
             $this->currentErrorMessage = $e;
-            throwError($e);
+            $this->throwError($e);
         }
     }
 
@@ -174,13 +174,13 @@ class database {
         try {
             $this->PDO = $this->connection->prepare($this->lastQuery);
             if (!$this->PDO) {
-                $this->currentErrorMessage = $this->PDO->errorInfo();
+                $this->currentErrorMessage = $this->connection->errorInfo();
             } else {
                 $this->PDO->execute($this->lastParams);
             }
         } catch (Exception $e) {
             $this->currentErrorMessage = $e;
-            throwError($e);
+            $this->throwError($e);
         }
     }
 
@@ -194,7 +194,7 @@ class database {
             }
         } catch (Exception $e) {
             $this->currentErrorMessage = $e;
-            throwError($e);
+            $this->throwError($e);
         }
     }
 
@@ -203,22 +203,22 @@ class database {
         try {
             $this->PDO = $this->connection->prepare($this->lastQuery);
             if (!$this->PDO) {
-                $this->currentErrorMessage = $this->PDO->errorInfo();
+                $this->currentErrorMessage = $this->connection->errorInfo();
             } else {
                 $this->data = $this->PDO->execute($this->lastParams);
             }
         } catch (Exception $e) {
             $this->currentErrorMessage = $e;
-            throwError($e);
+            $this->throwError($e);
         }
     }
 
     private function displayErrorMessage() {
         if ($this->currentErrorMessage && $this->debugMode) {
             print_r($this->currentErrorMessage);
-            echo $this->lastQuery;
+            echo "QUERY => " . $this->lastQuery;
             print_r($this->lastParams);
-            throwError($this->currentErrorMessage);
+            $this->throwError($this->currentErrorMessage[2]);
         }
     }
 
@@ -262,7 +262,6 @@ class database {
      *
      */
     public function insertFromArray($params) {
-
         $parameters = [];
         $realValues = [];
         $query = "INSERT INTO " . $params["table"];
@@ -339,7 +338,6 @@ class database {
             $parameters[":$field$incrementation"] = $value;
             $incrementation++;
         }
-
         foreach ($params["where"] as $field => $value) {
             $where .= $field . " = " . ":$field$incrementation ";
             $parameters[":$field$incrementation"] = $value;
@@ -360,8 +358,9 @@ class database {
         $this->lastErrorMessage = $this->currentErrorMessage;
         $this->currentErrorMessage = NULL;
     }
-    
-    private function throwError($error){
+
+    private function throwError($error) {
         trigger_error($error);
     }
+
 }
