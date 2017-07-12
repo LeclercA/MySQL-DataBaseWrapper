@@ -2,7 +2,6 @@
 
 class database {
 
-    private $data;
     public $dataBaseName;
     public $dataBaseType = "mysql";
     public $host = "localhost";
@@ -10,6 +9,7 @@ class database {
     public $password;
     public $charSet = "utf8";
     public $port = "3306";
+    private $data;
     private $connection;
     private $PDO;
     private $currentErrorMessage;
