@@ -18,16 +18,6 @@ class database {
     private $currentQuery;
     private $lastParams;
     private $lastQuery;
-    private $numbersOfQueries = 0;
-    private $numberOfSuccessfulQueries = 0;
-    private $numberOfSelectQueries = 0;
-    private $numberOfSuccessfulSelectQueries = 0;
-    private $numberOfInsertQueries = 0;
-    private $numberOfSuccessfulInsertQueries = 0;
-    private $numberOfUpdateQueries = 0;
-    private $numberOfSuccessfulUpdateQueries = 0;
-    private $numberOfDeleteQueries = 0;
-    private $numberOfSuccessfulDeleteQueries = 0;
     private $keyword;
     public $debugMode = false;
 
@@ -59,16 +49,7 @@ class database {
 
     public function __get($name) {
         switch ($name) {
-            case "numberOfQueries" : return $this->numberOfQueries;
-            case "numberOfSuccessfulQueries" : return $this->numberOfSuccessfulQueries;
-            case "numberOfSelectQueries" : return $this->numberOfSelectQueries;
-            case "numberOfSuccessfulSelectQueries" : return $this->numberOfSuccessfulSelectQueries;
-            case "numberOfDeleteQueries" : return $this->numberOfDeleteQueries;
-            case "numberOfSuccessfulDeleteQueries" : return $this->numberOfSuccessfulDeleteQueries;
-            case "numberOfInsertQueries" : return $this->numberOfInsertQueries;
-            case "numberOfSuccessfulInsertQueries" : return $this->numberOfSuccessfulInsertQueries;
-            case "numberOfUpdateQueries" : return $this->numberOfUpdateQueries;
-            case "numberOfSuccessfulUpdateQueries" : return $this->numberOfSuccessfulUpdateQueries;
+            case "data" : return $this->data;
             case "lastId" : return $this->connection->lastInsertId();
             case "rows" : return $this->PDO->rowCount();
             case "currentErrorMessage" : return $this->currentErrorMessage;
@@ -95,11 +76,9 @@ class database {
             }
             $this->lastErrorMessage = $this->currentErrorMessage;
             $this->currentErrorMessage = NULL;
-            $this->numbersOfQueries++;
             $this->keyword = strtolower(explode(' ', $this->lastQuery)[0]);
             switch ($this->keyword) {
                 case "select" :
-                    $this->numberOfSelectQueries++;
                     if (empty($params) && empty($this->currentParams)) {
                         $this->executeSelectWithoutParams();
                     } else {
@@ -107,9 +86,6 @@ class database {
                         $this->executeSelectWithParams();
                     }
                     break;
-                case "delete": $this->numberOfDeleteQueries++;
-                case "insert" : $this->numberOfInsertQueries++;
-                case "update":$this->numberOfUpdateQueries++;
                     if (empty($params) && empty($this->currentParams)) {
                         $this->executeDeleteInsetUpdateWithoutParams();
                     } else {
@@ -137,19 +113,7 @@ class database {
                 $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
             }
         }
-        if ($this->data) {
-            switch ($this->keyword) {
-                case "select" :$this->numberOfSuccessfulSelectQueries++;
-                    break;
-                case "delete": $this->numberOfSuccessfulDeleteQueries++;
-                    break;
-                case "insert" : $this->numberOfSuccessfulInsertQueries++;
-                    break;
-                case "update":$this->numberOfSuccessfulUpdateQueries++;
-                    break;
-            }
-            $this->numberOfSuccessfulQueries++;
-        }
+
         $this->resetParams();
         return $this->data;
     }
@@ -250,7 +214,6 @@ class database {
      *      table => the name of the table where you want to insert the data;
      *      values => an array where the keys are your databaseField and the values are the values to insert
      *      id =>  set the primary key. default : id, with value NULL. if set to false, no primary key with no value
-     *      multiple => bool. false or null if you only have one row to insert, true otherwise and if values is an array of array. It will detect array of array by magic
      *      reverse => bool. false or null or not exist if the element to insert are ready (ex : [0 => ['name'=> 'bob', 'age' => 12], 1 => ['name' => 'pablo', age => 13]] AND THAT ITS AN ASSOCIATIVE ARRAY ( index starts from 0 and go up by 1 each time)
      *      If its an associative array, but the element are ready... nothing is going to work.
      *      Set reverse to true if your data comes from a form (ex : ["name" => ["bob", "pablo"], "age" => [12,13]]
@@ -260,9 +223,6 @@ class database {
      *
      */
     public function insertFromArray($params) {
-        $parameters = [];
-        $realValues = [];
-        $query = "INSERT INTO " . $params["table"];
         $columns = "(id,";
         $defaultValues = "(NULL,";
         if (isset($params["id"])) {
@@ -273,46 +233,38 @@ class database {
                 $columns = '(' . $params["id"] . ',';
             }
         }
-        $values = $defaultValues;
-        $multiple = isset($params["multiple"]) && $params["multiple"];
+        $valuesToInsert = $defaultValues;
         $multipleIncrementation = 0;
-        if ((isset($params["reverse"]) && $params["reverse"]) || $this->isAssoc($params["values"])) {
-            foreach ($params["values"] as $reverseKey => $reverseValue) {
-                foreach ($reverseValue as $rrKey => $rrValue) {
-                    $realValues[$rrKey][$reverseKey] = $rrValue;
-                }
-            }
-        } else {
-            $realValues = $params["values"];
-        }
+
+        //Rotate the array 90°
+        $realValues = (isset($params["reverse"]) && $params["reverse"]) || $this->isAssoc($params["values"]) ? $this->rotateAssocArray($params["values"]) : $params["values"];
+
         foreach ($realValues as $field => $value) {
-            if ($multiple || is_array($value)) {
+            if (is_array($value)) {
                 $multiple = true;
                 foreach ($value as $multipleField => $multipleValue) {
                     if (!$multipleIncrementation) {
                         $columns .= $multipleField . ',';
                     }
-                    $values .= ":$multipleField" . "$multipleIncrementation,";
-                    $parameters[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
+                    $valuesToInsert .= ":$multipleField" . "$multipleIncrementation,";
+                    $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
                 }
-                $values = substr($values, 0, -1) . ")";
-                $values .= "," . $defaultValues;
+                $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
+                $valuesToInsert .= "," . $defaultValues;
                 $multipleIncrementation++;
             } else {
                 $columns .= $field . ',';
-                $values .= ":$field,";
-                $parameters[":$field"] = empty($value) ? NULL : $value;
+                $valuesToInsert .= ":$field,";
+                $this->currentParams[":$field"] = empty($value) ? NULL : $value;
             }
         }
         if ($multiple) {
-            $values = substr($values, 0, -(strlen($defaultValues)) - 1);
+            $valuesToInsert = substr($valuesToInsert, 0, -(strlen($defaultValues)) - 1);
         } else {
-            $values = substr($values, 0, -1) . ")";
+            $valuesToInsert = substr($values, 0, -1) . ")";
         }
         $columns = substr($columns, 0, -1) . ")";
-        $query .= " $columns VALUES $values";
-        $this->currentQuery = $query;
-        $this->currentParams = $parameters;
+        $this->currentQuery = "INSERT INTO " . $params["table"] . " $columns VALUES $values";
         return $this;
     }
 
@@ -326,8 +278,8 @@ class database {
      * @return void No return, calls $this->execute;
      */
     public function updateFromArray($params) {
-        $query = "UPDATE " . $params["table"] . " SET ";
-        $set = "";
+        $query = "UPDATE " . $params["table"];
+        $set = " SET ";
         $parameters = [];
         $incrementation = 0;
         $where = " WHERE ";
@@ -366,6 +318,16 @@ class database {
             return false;
         }
         return array_keys($arr) !== range(0, count($arr) - 1);
+    }
+
+    private function rotateAssocArray($array) {
+        $newArray = [];
+        foreach ($array as $reverseKey => $reverseValue) {
+            foreach ($reverseValue as $reverseSubKey => $reverseSubValue) {
+                $newArray[$reverseSubKey][$reverseKey] = $reverseSubValue;
+            }
+        }
+        return $newArray;
     }
 
 }
