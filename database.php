@@ -1,6 +1,6 @@
 <?php
 
-class database {
+class database extends utilities {
 
     public $dataBaseName;
     public $host = "localhost";
@@ -8,6 +8,7 @@ class database {
     public $password;
     public $charSet = "utf8";
     public $port = "3306";
+    public $debugMode = false;
     private $dataBaseType = "mysql";
     private $data;
     private $connection;
@@ -19,7 +20,6 @@ class database {
     private $lastParams;
     private $lastQuery;
     private $keyword;
-    public $debugMode = false;
 
     /**
      * Constructor
@@ -184,67 +184,68 @@ class database {
      *
      */
     public function insertFromArray($params) {
+        //hacks
+        $this->currentParams = [];
         $table = $params["table"];
-        $columnInfo = $this->getTableInfo($table);
-        ksort($columnInfo);
-        ksort($params["values"]);
+
+
         $columns = "(";
         $defaultValues = "(";
-        $columnsOther = "";
-        print_r($columnInfo);
-        print_r($params["values"]);
-        //print_r($params["values"]);
-        foreach ($columnInfo as $key => $value) {
-            if (array_key_exists($key, $params["values"])) { //in insert, autoincremented primary key is not in post data
-                $columnsOther .= $key . ",";
-            } elseif ($value["primaryKey"] && $value["autoIncrement"]) {
-                $columns .= $key . ',';
-                $defaultValues = "NULL,";
+        $columnsOtherForQuery = "";
+
+
+        $columnInfo = $this->getTableInfo($table);
+        ksort($columnInfo);
+        $columnInfoFieldNames = array_keys($columnInfo);
+
+        $isAssoc = $this->isAssoc($params["values"]);
+        $rotatedValues = !$isAssoc ? $this->rotateArray($params["values"]) : $params["values"];
+        unset($params);
+        $rotatedValues = $this->cleanArray($rotatedValues, $columnInfoFieldNames);
+        $columnsNameFromParams = array_keys($rotatedValues);
+        sort($columnsNameFromParams);
+        $columnsNameFromParams = array_flip($columnsNameFromParams);
+
+
+        foreach ($columnInfo as $columnKey => $columnValue) {
+            if (array_key_exists($columnKey, $columnsNameFromParams)) { //in insert, autoincremented primary key is not in post data
+                $columnsOtherForQuery .= $columnKey . ",";
+            } elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
+                $columns .= $columnKey . ',';
+                $defaultValues .= "NULL,";
+            } else {
+                //$this->recursive_unset($params["values"], $columnKey);
             }
         }
-        $columns = substr($columns . $columnsOther, 0, -1) . ")";
-//        if (isset($params["id"])) {
-//            if (!$params["id"]) {
-//                $columns = '(';
-//                $defaultValues = '(';
-//            } else {
-//                $columns = '(' . $params["id"] . ',';
-//            }
-//        }
-//        $valuesToInsert = $defaultValues;
-//        $multipleIncrementation = 0;
-//        $multiple = false;
-//
-//
-//        $realValues = $this->isAssoc($params["values"]) && $this->checkForSubArray($params["values"]) ? $this->rotateArray($params["values"]) : $params["values"];
-//
-//        foreach ($realValues as $field => $value) {
-//            if (is_array($value)) {
-//                $multiple = true;
-//                foreach ($value as $multipleField => $multipleValue) {
-//                    if (!$multipleIncrementation) {
-//                        $columns .= $multipleField . ',';
-//                    }
-//                    $valuesToInsert .= ":$multipleField" . "$multipleIncrementation,";
-//                    $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
-//                }
-//                $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
-//                $valuesToInsert .= "," . $defaultValues;
-//                $multipleIncrementation++;
-//            } else {
-//                $columns .= $field . ',';
-//                $valuesToInsert .= ":$field,";
-//                $this->currentParams[":$field"] = empty($value) ? NULL : $value;
-//            }
-//        }
-//        if ($multiple) {
-//            $valuesToInsert = substr($valuesToInsert, 0, -(strlen($defaultValues)) - 1);
-//        } else {
-//            $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
-//        }
-//        $columns = substr($columns, 0, -1) . ")";
-        echo $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
 
+        $columns = substr($columns . $columnsOtherForQuery, 0, -1) . ")";
+        $valuesToInsert = $defaultValues;
+        $multipleIncrementation = 0;
+        $multiple = false;
+        $newValues = $this->checkForSubArray($rotatedValues) ? $this->rotateArray($rotatedValues) : $rotatedValues;
+        foreach ($newValues as $field => $value) {
+            if (is_array($value)) {
+                $multiple = true;
+                foreach ($value as $multipleField => $multipleValue) {
+                    $valuesToInsert .= ":$multipleField" . "$multipleIncrementation,";
+                    $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
+                }
+                $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
+                $valuesToInsert .= "," . $defaultValues;
+                $multipleIncrementation++;
+            } else {
+                $valuesToInsert .= ":$field,";
+                $this->currentParams[":$field"] = empty($value) ? NULL : $value;
+            }
+        }
+        if ($multiple) {
+            $valuesToInsert = substr($valuesToInsert, 0, -(strlen($defaultValues)) - 1);
+        } else {
+            $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
+        }
+        $columns = substr($columns, 0, -1) . ")";
+        echo $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
+        print_r($this->currentParams);
         return $this;
     }
 
@@ -315,27 +316,6 @@ class database {
         $this->currentErrorMessage = NULL;
     }
 
-    private function isAssoc(array $arr) {
-        if (array() === $arr) {
-            return false;
-        }
-        return array_keys($arr) !== range(0, count($arr) - 1);
-    }
-
-    private function rotateArray($array) {
-        $newArray = [];
-        foreach ($array as $reverseKey => $reverseValue) {
-            foreach ($reverseValue as $reverseSubKey => $reverseSubValue) {
-                $newArray[$reverseSubKey][$reverseKey] = $reverseSubValue;
-            }
-        }
-        return $newArray;
-    }
-
-    private function checkForSubArray($array) {
-        return is_array(reset($array));
-    }
-
     private function getTableInfo($table) {
         $this->PDO = $this->connection->query("SHOW COLUMNS FROM $table");
         $columns = [];
@@ -347,10 +327,6 @@ class database {
             $columns[$name]["autoIncrement"] = $value["Extra"] === "auto_increment";
         }
         return $columns;
-    }
-
-    private function sanitizeInput($input, $type) {
-
     }
 
 }
