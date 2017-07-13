@@ -179,28 +179,28 @@ class database {
         }
     }
 
-    private function contructSetter($options) {
+        private function contructSetter($options) {
         $dataBaseString = "";
-        if (!empty($options["dataBaseType"]) && isset($options["dataBaseType"])) {
+        if (isset($options["dataBaseType"]) && !empty($options["dataBaseType"])) {
             $this->dataBaseType = $options["dataBaseType"];
         }
-        if (!empty($options["dataBaseName"]) && isset($options["dataBaseName"])) {
+        if (isset($options["dataBaseName"]) && !empty($options["dataBaseName"])) {
             $this->dataBaseName = $options["dataBaseName"];
             $dataBaseString = ";dbname=" . $this->dataBaseName;
         }
-        if (!empty($options["host"]) && isset($options["host"])) {
+        if (isset($options["host"]) && !empty($options["host"])) {
             $this->host = $options["host"];
         }
-        if (!empty($options["charSet"]) && isset($options["charSet"])) {
+        if (isset($options["charSet"]) && !empty($options["charSet"])) {
             $this->charSet = $options["charSet"];
         }
-        if (!empty($options["port"]) && isset($options["port"])) {
+        if (isset($options["port"]) && !empty($options["port"])) {
             $this->port = $options["port"];
         }
-        if (!empty($options["user"]) && isset($options["user"])) {
+        if (isset($options["user"]) && !empty($options["user"])) {
             $this->user = $options["user"];
         }
-        if (!empty($options["password"]) && isset($options["password"])) {
+        if (isset($options["password"]) && !empty($options["password"])) {
             $this->password = $options["password"];
         }
         return $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
