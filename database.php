@@ -3,12 +3,12 @@
 class database {
 
     public $dataBaseName;
-    public $dataBaseType = "mysql";
     public $host = "localhost";
     public $user = "root";
     public $password;
     public $charSet = "utf8";
     public $port = "3306";
+    private $dataBaseType = "mysql";
     private $data;
     private $connection;
     private $PDO;
@@ -42,7 +42,7 @@ class database {
         } catch (Exception $e) {
             trigger_error("Impossible to connect to the databse.");
         }
-        //placeholder
+        //Cannot be removed
         $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->connection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     }
@@ -57,16 +57,6 @@ class database {
         }
     }
 
-    public function query($query) {
-        $this->currentQuery = $query;
-        return $this;
-    }
-
-    public function params($params) {
-        $this->currentParams = $params;
-        return $this;
-    }
-
     public function execute($query = null, $params = null) {
         if ($this->connection) {
             if (empty($query)) {
@@ -77,7 +67,7 @@ class database {
             $this->lastErrorMessage = $this->currentErrorMessage;
             $this->currentErrorMessage = NULL;
             $this->keyword = strtolower(explode(' ', $this->lastQuery)[0]);
-            if ($this->keyword === "select") {
+            if ($this->keyword === "select" || $this->keyword === "show") {
                 if (empty($params) && empty($this->currentParams)) {
                     $this->executeSelectWithoutParams();
                 } else {
@@ -104,7 +94,7 @@ class database {
 
     public function getResult($fetchMethod = null) {
         $this->displayErrorMessage();
-        if ($this->keyword === "select") {
+        if ($this->keyword === "select" || $this->keyword === "show") {
             if ($fetchMethod === "firstRow") {
                 $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
             } else {
@@ -179,33 +169,6 @@ class database {
         }
     }
 
-        private function contructSetter($options) {
-        $dataBaseString = "";
-        if (isset($options["dataBaseType"]) && !empty($options["dataBaseType"])) {
-            $this->dataBaseType = $options["dataBaseType"];
-        }
-        if (isset($options["dataBaseName"]) && !empty($options["dataBaseName"])) {
-            $this->dataBaseName = $options["dataBaseName"];
-            $dataBaseString = ";dbname=" . $this->dataBaseName;
-        }
-        if (isset($options["host"]) && !empty($options["host"])) {
-            $this->host = $options["host"];
-        }
-        if (isset($options["charSet"]) && !empty($options["charSet"])) {
-            $this->charSet = $options["charSet"];
-        }
-        if (isset($options["port"]) && !empty($options["port"])) {
-            $this->port = $options["port"];
-        }
-        if (isset($options["user"]) && !empty($options["user"])) {
-            $this->user = $options["user"];
-        }
-        if (isset($options["password"]) && !empty($options["password"])) {
-            $this->password = $options["password"];
-        }
-        return $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
-    }
-
     /**
      *  Takes an array as parameter and insert the data into the database
      * @param array $params
@@ -221,48 +184,67 @@ class database {
      *
      */
     public function insertFromArray($params) {
-        $columns = "(id,";
-        $defaultValues = "(NULL,";
-        if (isset($params["id"])) {
-            if (!$params["id"]) {
-                $columns = '(';
-                $defaultValues = '(';
-            } else {
-                $columns = '(' . $params["id"] . ',';
+        $table = $params["table"];
+        $columnInfo = $this->getTableInfo($table);
+        ksort($columnInfo);
+        ksort($params["values"]);
+        $columns = "(";
+        $defaultValues = "(";
+        $columnsOther = "";
+        print_r($columnInfo);
+        print_r($params["values"]);
+        //print_r($params["values"]);
+        foreach ($columnInfo as $key => $value) {
+            if (array_key_exists($key, $params["values"])) { //in insert, autoincremented primary key is not in post data
+                $columnsOther .= $key . ",";
+            } elseif ($value["primaryKey"] && $value["autoIncrement"]) {
+                $columns .= $key . ',';
+                $defaultValues = "NULL,";
             }
         }
-        $valuesToInsert = $defaultValues;
-        $multipleIncrementation = 0;
+        $columns = substr($columns . $columnsOther, 0, -1) . ")";
+//        if (isset($params["id"])) {
+//            if (!$params["id"]) {
+//                $columns = '(';
+//                $defaultValues = '(';
+//            } else {
+//                $columns = '(' . $params["id"] . ',';
+//            }
+//        }
+//        $valuesToInsert = $defaultValues;
+//        $multipleIncrementation = 0;
+//        $multiple = false;
+//
+//
+//        $realValues = $this->isAssoc($params["values"]) && $this->checkForSubArray($params["values"]) ? $this->rotateArray($params["values"]) : $params["values"];
+//
+//        foreach ($realValues as $field => $value) {
+//            if (is_array($value)) {
+//                $multiple = true;
+//                foreach ($value as $multipleField => $multipleValue) {
+//                    if (!$multipleIncrementation) {
+//                        $columns .= $multipleField . ',';
+//                    }
+//                    $valuesToInsert .= ":$multipleField" . "$multipleIncrementation,";
+//                    $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
+//                }
+//                $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
+//                $valuesToInsert .= "," . $defaultValues;
+//                $multipleIncrementation++;
+//            } else {
+//                $columns .= $field . ',';
+//                $valuesToInsert .= ":$field,";
+//                $this->currentParams[":$field"] = empty($value) ? NULL : $value;
+//            }
+//        }
+//        if ($multiple) {
+//            $valuesToInsert = substr($valuesToInsert, 0, -(strlen($defaultValues)) - 1);
+//        } else {
+//            $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
+//        }
+//        $columns = substr($columns, 0, -1) . ")";
+        echo $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
 
-
-        $realValues = isset($params["reverse"]) && $params["reverse"] || $this->isAssoc($params["values"]) && $this->checkForSubArray($params["values"]) ? $this->rotateAssocArray($params["values"]) : $params["values"];
-
-        foreach ($realValues as $field => $value) {
-            if (is_array($value)) {
-                $multiple = true;
-                foreach ($value as $multipleField => $multipleValue) {
-                    if (!$multipleIncrementation) {
-                        $columns .= $multipleField . ',';
-                    }
-                    $valuesToInsert .= ":$multipleField" . "$multipleIncrementation,";
-                    $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
-                }
-                $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
-                $valuesToInsert .= "," . $defaultValues;
-                $multipleIncrementation++;
-            } else {
-                $columns .= $field . ',';
-                $valuesToInsert .= ":$field,";
-                $this->currentParams[":$field"] = empty($value) ? NULL : $value;
-            }
-        }
-        if ($multiple) {
-            $valuesToInsert = substr($valuesToInsert, 0, -(strlen($defaultValues)) - 1);
-        } else {
-            $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
-        }
-        $columns = substr($columns, 0, -1) . ")";
-        $this->currentQuery = "INSERT INTO " . $params["table"] . " $columns VALUES $valuesToInsert";
         return $this;
     }
 
@@ -273,7 +255,7 @@ class database {
      *      values => an array where the keys are your databaseField and the values are the values to update
      *      condition => and array where the key is the databaseField and to value is the expression to look for
      *
-     * @return void No return, calls $this->execute;
+     * @return void No return
      */
     public function updateFromArray($params) {
         $query = "UPDATE " . $params["table"];
@@ -298,6 +280,32 @@ class database {
         return $this;
     }
 
+    private function contructSetter($options) {
+        $dataBaseString = "";
+        if ($options !== null) {
+            if (isset($options["dataBaseName"]) && !empty($options["dataBaseName"])) {
+                $this->dataBaseName = $options["dataBaseName"];
+                $dataBaseString = ";dbname=" . $this->dataBaseName;
+            }
+            if (isset($options["host"]) && !empty($options["host"])) {
+                $this->host = $options["host"];
+            }
+            if (isset($options["charSet"]) && !empty($options["charSet"])) {
+                $this->charSet = $options["charSet"];
+            }
+            if (isset($options["port"]) && !empty($options["port"])) {
+                $this->port = $options["port"];
+            }
+            if (isset($options["user"]) && !empty($options["user"])) {
+                $this->user = $options["user"];
+            }
+            if (isset($options["password"]) && !empty($options["password"])) {
+                $this->password = $options["password"];
+            }
+        }
+        return $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
+    }
+
     private function resetParams() {
         $this->lastQuery = $this->currentQuery;
         $this->currentQuery = NULL;
@@ -314,7 +322,7 @@ class database {
         return array_keys($arr) !== range(0, count($arr) - 1);
     }
 
-    private function rotateAssocArray($array) {
+    private function rotateArray($array) {
         $newArray = [];
         foreach ($array as $reverseKey => $reverseValue) {
             foreach ($reverseValue as $reverseSubKey => $reverseSubValue) {
@@ -326,6 +334,23 @@ class database {
 
     private function checkForSubArray($array) {
         return is_array(reset($array));
+    }
+
+    private function getTableInfo($table) {
+        $this->PDO = $this->connection->query("SHOW COLUMNS FROM $table");
+        $columns = [];
+        $info = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($info as $key => $value) {
+            $name = $value["Field"];
+            $columns[$name]["type"] = explode('(', $value["Type"])[0];
+            $columns[$name]["primaryKey"] = $value["Key"] === "PRI";
+            $columns[$name]["autoIncrement"] = $value["Extra"] === "auto_increment";
+        }
+        return $columns;
+    }
+
+    private function sanitizeInput($input, $type) {
+
     }
 
 }
