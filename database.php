@@ -77,22 +77,20 @@ class database {
             $this->lastErrorMessage = $this->currentErrorMessage;
             $this->currentErrorMessage = NULL;
             $this->keyword = strtolower(explode(' ', $this->lastQuery)[0]);
-            switch ($this->keyword) {
-                case "select" :
-                    if (empty($params) && empty($this->currentParams)) {
-                        $this->executeSelectWithoutParams();
-                    } else {
-                        $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
-                        $this->executeSelectWithParams();
-                    }
-                    break;
-                    if (empty($params) && empty($this->currentParams)) {
-                        $this->executeDeleteInsetUpdateWithoutParams();
-                    } else {
-                        $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
-                        $this->executeDeleteInsertUpdateWithParams();
-                    }
-                    break;
+            if ($this->keyword === "select") {
+                if (empty($params) && empty($this->currentParams)) {
+                    $this->executeSelectWithoutParams();
+                } else {
+                    $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
+                    $this->executeSelectWithParams();
+                }
+            } else {
+                if (empty($params) && empty($this->currentParams)) {
+                    $this->executeDeleteInsetUpdateWithoutParams();
+                } else {
+                    $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
+                    $this->executeDeleteInsertUpdateWithParams();
+                }
             }
             return $this;
         } else {
@@ -126,7 +124,7 @@ class database {
             }
         } catch (PDOException $e) {
             $this->currentErrorMessage = $e;
-            $this->throwError($e);
+            trigger_error($e);
         }
     }
 
@@ -140,7 +138,7 @@ class database {
             }
         } catch (PDOException $e) {
             $this->currentErrorMessage = $e;
-            $this->throwError($e);
+            trigger_error($e);
         }
     }
 
@@ -154,7 +152,7 @@ class database {
             }
         } catch (PDOException $e) {
             $this->currentErrorMessage = $e;
-            $this->throwError($e);
+            trigger_error($e);
         }
     }
 
@@ -168,7 +166,7 @@ class database {
             }
         } catch (PDOException $e) {
             $this->currentErrorMessage = $e;
-            $this->throwError($e);
+            trigger_error($e);
         }
     }
 
@@ -177,7 +175,7 @@ class database {
             print_r($this->currentErrorMessage);
             echo "QUERY => " . $this->lastQuery;
             print_r($this->lastParams);
-            $this->throwError($this->currentErrorMessage);
+            trigger_error($this->currentErrorMessage);
         }
     }
 
@@ -307,10 +305,6 @@ class database {
         $this->currentParams = NULL;
         $this->lastErrorMessage = $this->currentErrorMessage;
         $this->currentErrorMessage = NULL;
-    }
-
-    private function throwError($error) {
-        trigger_error($error);
     }
 
     private function isAssoc(array $arr) {
