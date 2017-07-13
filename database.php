@@ -234,8 +234,8 @@ class database {
         $valuesToInsert = $defaultValues;
         $multipleIncrementation = 0;
 
-        //Rotate the array 90°
-        $realValues = (isset($params["reverse"]) && $params["reverse"]) || $this->isAssoc($params["values"]) ? $this->rotateAssocArray($params["values"]) : $params["values"];
+
+        $realValues = isset($params["reverse"]) && $params["reverse"] || $this->isAssoc($params["values"]) && $this->checkForSubArray($params["values"]) ? $this->rotateAssocArray($params["values"]) : $params["values"];
 
         foreach ($realValues as $field => $value) {
             if (is_array($value)) {
@@ -259,10 +259,10 @@ class database {
         if ($multiple) {
             $valuesToInsert = substr($valuesToInsert, 0, -(strlen($defaultValues)) - 1);
         } else {
-            $valuesToInsert = substr($values, 0, -1) . ")";
+            $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
         }
         $columns = substr($columns, 0, -1) . ")";
-        $this->currentQuery = "INSERT INTO " . $params["table"] . " $columns VALUES $values";
+        $this->currentQuery = "INSERT INTO " . $params["table"] . " $columns VALUES $valuesToInsert";
         return $this;
     }
 
@@ -322,6 +322,10 @@ class database {
             }
         }
         return $newArray;
+    }
+
+    private function checkForSubArray($array) {
+        return is_array(reset($array));
     }
 
 }
