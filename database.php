@@ -234,7 +234,7 @@ class database extends utilities {
      *      If its an associative array, but the element are ready... nothing is going to work.
      *      Set reverse to true if your data comes from a form (ex : ["name" => ["bob", "pablo"], "age" => [12,13]]
      *      reverse is detected automaticly
-     * @example void $db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12], "reverse" => true])->execute();
+     * @example void $db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12]])->execute();
      * @return database this
      *
      */
@@ -255,8 +255,6 @@ class database extends utilities {
         //Having the same order is crucial. Sorting them by the key
         ksort($columnInfo);
         ksort($rotatedValues);
-
-
 
         $columnsNameFromParams = array_keys($rotatedValues);
 
@@ -282,16 +280,14 @@ class database extends utilities {
                 $multiple = true;
                 foreach ($value as $multipleField => $multipleValue) {
                     //Same as ...
-                    $valuesToInsert .= ":$multipleField" . "$multipleIncrementation,";
-                    $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
+                    $valuesToInsert .= $this->setString($multipleField,$multipleValue,$multipleIncrementation);
                 }
                 $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
                 $valuesToInsert .= "," . $defaultValues;
                 $multipleIncrementation++;
             } else {
                 //...this
-                $valuesToInsert .= ":$field,";
-                $this->currentParams[":$field"] = empty($value) ? NULL : $value;
+                $valuesToInsert .= $this->setString($field,$value);
             }
         }
         if ($multiple) {
@@ -384,6 +380,11 @@ class database extends utilities {
             $columns[$name]["autoIncrement"] = $value["Extra"] === "auto_increment";
         }
         return $columns;
+    }
+
+    private function setString($field,$value,$increment = NULL){
+        $this->currentParams[":$field" . $increment] = empty($value) ? NULL : $value;
+        return ":$field" . "$increment,";     
     }
 
 }
