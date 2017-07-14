@@ -235,7 +235,6 @@ class database extends utilities {
      *
      */
     public function insertFromArray($params) {
-        $this->currentParams = [];
         $table = $params["table"];
 
         $columns = "(";
@@ -297,9 +296,7 @@ class database extends utilities {
             $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
         }
         $columns = substr($columns, 0, -1) . ")";
-        echo $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
-        echo "<br>";
-        print_r($this->currentParams);
+        $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
         return $this;
     }
 
