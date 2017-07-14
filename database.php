@@ -76,7 +76,6 @@ class database extends utilities {
     private $lastParams;
     private $lastQuery;
     private $keyword;
-    private $thisIsaText;
 
     /**
      * Constructor
