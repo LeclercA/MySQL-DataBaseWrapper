@@ -184,37 +184,35 @@ class database extends utilities {
      *
      */
     public function insertFromArray($params) {
-        //hacks
-        $this->currentParams = [];
+        //TODO : sanitize inputs
         $table = $params["table"];
-
-
+        
         $columns = "(";
         $defaultValues = "(";
         $columnsOtherForQuery = "";
 
-
         $columnInfo = $this->getTableInfo($table);
         ksort($columnInfo);
-        $columnInfoFieldNames = array_keys($columnInfo);
 
-        $isAssoc = $this->isAssoc($params["values"]);
-        $rotatedValues = !$isAssoc ? $this->rotateArray($params["values"]) : $params["values"];
+        //better to just do it in one lign ?
+        $rotatedValues = !$this->isAssoc($params["values"]) ? $this->rotateArray($params["values"]) : $params["values"];
+        $rotatedValues = $this->cleanArray($rotatedValues,  array_keys($columnInfo));
+        
+        //no memory leaks here boys
         unset($params);
-        $rotatedValues = $this->cleanArray($rotatedValues, $columnInfoFieldNames);
+        
+        //is there a way to do it on one lign ?
         $columnsNameFromParams = array_keys($rotatedValues);
         sort($columnsNameFromParams);
         $columnsNameFromParams = array_flip($columnsNameFromParams);
 
-
+        //For each column of the table, check if the name fits the column of the data. Also checks for autoincremented primary key
         foreach ($columnInfo as $columnKey => $columnValue) {
-            if (array_key_exists($columnKey, $columnsNameFromParams)) { //in insert, autoincremented primary key is not in post data
+            if (array_key_exists($columnKey, $columnsNameFromParams)) {
                 $columnsOtherForQuery .= $columnKey . ",";
             } elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
                 $columns .= $columnKey . ',';
                 $defaultValues .= "NULL,";
-            } else {
-                //$this->recursive_unset($params["values"], $columnKey);
             }
         }
 
@@ -227,6 +225,7 @@ class database extends utilities {
             if (is_array($value)) {
                 $multiple = true;
                 foreach ($value as $multipleField => $multipleValue) {
+                    //Same as ...
                     $valuesToInsert .= ":$multipleField" . "$multipleIncrementation,";
                     $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
                 }
@@ -234,6 +233,7 @@ class database extends utilities {
                 $valuesToInsert .= "," . $defaultValues;
                 $multipleIncrementation++;
             } else {
+                //...this
                 $valuesToInsert .= ":$field,";
                 $this->currentParams[":$field"] = empty($value) ? NULL : $value;
             }
