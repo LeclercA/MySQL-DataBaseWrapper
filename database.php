@@ -235,7 +235,7 @@ class database extends utilities {
      *
      */
     public function insertFromArray($params) {
-        //TODO : sanitize inputs
+        $this->currentParams = [];
         $table = $params["table"];
 
         $columns = "(";
@@ -248,18 +248,19 @@ class database extends utilities {
         //no memory leaks here boys
         unset($params);
 
-        //Having the same order is crucial
+        //Having the same order is crucial. Sorting them by the key
         ksort($columnInfo);
         ksort($rotatedValues);
 
+
+
         $columnsNameFromParams = array_keys($rotatedValues);
-        sort($columnsNameFromParams);
-        $columnsNameFromParams = array_flip($columnsNameFromParams);
+
         //For each column of the table, check if the name fits the column of the data. Also checks for autoincremented primary key
+        //Could use array_intersect_key , but that would be two loop, because i would still need to check for the primary key
         $newValues = [];
-        print_r($rotatedValues);
         foreach ($columnInfo as $columnKey => $columnValue) {
-            if (array_key_exists($columnKey, $columnsNameFromParams)) {
+            if (in_array($columnKey, $columnsNameFromParams)) {
                 $columnsOtherForQuery .= $columnKey . ",";
                 $newValues[$columnKey] = $rotatedValues[$columnKey];
             } elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
@@ -279,7 +280,7 @@ class database extends utilities {
                 foreach ($value as $multipleField => $multipleValue) {
                     //Same as ...
                     $valuesToInsert .= ":$multipleField" . "$multipleIncrementation,";
-                    $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $this->sanitizeInput($multipleValue);
+                    $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
                 }
                 $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
                 $valuesToInsert .= "," . $defaultValues;
@@ -297,6 +298,7 @@ class database extends utilities {
         }
         $columns = substr($columns, 0, -1) . ")";
         echo $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
+        echo "<br>";
         print_r($this->currentParams);
         return $this;
     }
