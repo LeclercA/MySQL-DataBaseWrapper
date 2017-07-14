@@ -1,4 +1,56 @@
+
 <?php
+
+class utilities {
+
+    /**
+     * Verify is the array provided is associative or not
+     * @param array The array the verify
+     * @return boolean true if array is associative, false if not.
+     */
+    public function isAssoc(array $arr) {
+        if (array() === $arr) {
+            return false;
+        }
+        return array_keys($arr) !== range(0, count($arr) - 1);
+    }
+
+    public function rotateArray($array) {
+        $newArray = [];
+        foreach ($array as $reverseKey => $reverseValue) {
+            foreach ($reverseValue as $reverseSubKey => $reverseSubValue) {
+                $newArray[$reverseSubKey][$reverseKey] = $reverseSubValue;
+            }
+        }
+        return $newArray;
+    }
+
+    public function checkForSubArray($array) {
+        return is_array(reset($array));
+    }
+
+    public function sanitizeInput($input, $type = null) {
+        if (is_string($input)) {
+            if (preg_match("/^\S+@\S+[\.]\S+$/", $input)) {
+                echo "huston, we got an email";
+            }
+        }
+        return $input;
+    }
+
+    public function cleanArray($arrayToClean, $arrayToCheckKeysFor) {
+        if (!$this->isAssoc($arrayToCheckKeysFor)) {
+            $arrayToCheckKeysFor = array_flip($arrayToCheckKeysFor);
+        }
+        foreach ($arrayToClean as $cleanKey => $cleanValue) {
+            if (!array_key_exists($cleanKey, $arrayToCheckKeysFor)) {
+                unset($arrayToClean[$cleanKey]);
+            }
+        }
+        return $arrayToClean;
+    }
+
+}
 
 class database extends utilities {
 
@@ -101,7 +153,6 @@ class database extends utilities {
                 $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
             }
         }
-
         $this->resetParams();
         return $this->data;
     }
@@ -186,48 +237,49 @@ class database extends utilities {
     public function insertFromArray($params) {
         //TODO : sanitize inputs
         $table = $params["table"];
-        
+
         $columns = "(";
         $defaultValues = "(";
         $columnsOtherForQuery = "";
-
         $columnInfo = $this->getTableInfo($table);
-        ksort($columnInfo);
 
-        //better to just do it in one lign ?
         $rotatedValues = !$this->isAssoc($params["values"]) ? $this->rotateArray($params["values"]) : $params["values"];
-        $rotatedValues = $this->cleanArray($rotatedValues,  array_keys($columnInfo));
-        
+
         //no memory leaks here boys
         unset($params);
-        
-        //is there a way to do it on one lign ?
+
+        //Having the same order is crucial
+        ksort($columnInfo);
+        ksort($rotatedValues);
+
         $columnsNameFromParams = array_keys($rotatedValues);
         sort($columnsNameFromParams);
         $columnsNameFromParams = array_flip($columnsNameFromParams);
-
         //For each column of the table, check if the name fits the column of the data. Also checks for autoincremented primary key
+        $newValues = [];
+        print_r($rotatedValues);
         foreach ($columnInfo as $columnKey => $columnValue) {
             if (array_key_exists($columnKey, $columnsNameFromParams)) {
                 $columnsOtherForQuery .= $columnKey . ",";
+                $newValues[$columnKey] = $rotatedValues[$columnKey];
             } elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
                 $columns .= $columnKey . ',';
                 $defaultValues .= "NULL,";
             }
         }
-
         $columns = substr($columns . $columnsOtherForQuery, 0, -1) . ")";
         $valuesToInsert = $defaultValues;
         $multipleIncrementation = 0;
         $multiple = false;
-        $newValues = $this->checkForSubArray($rotatedValues) ? $this->rotateArray($rotatedValues) : $rotatedValues;
+        $newValues = $this->checkForSubArray($newValues) ? $this->rotateArray($newValues) : $newValues;
+        //print_r($newValues);
         foreach ($newValues as $field => $value) {
             if (is_array($value)) {
                 $multiple = true;
                 foreach ($value as $multipleField => $multipleValue) {
                     //Same as ...
                     $valuesToInsert .= ":$multipleField" . "$multipleIncrementation,";
-                    $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $multipleValue;
+                    $this->currentParams[":$multipleField" . $multipleIncrementation] = empty($multipleValue) ? NULL : $this->sanitizeInput($multipleValue);
                 }
                 $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
                 $valuesToInsert .= "," . $defaultValues;
