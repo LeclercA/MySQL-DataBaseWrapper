@@ -8,14 +8,14 @@ class utilities {
      * @param array The array the verify
      * @return boolean true if array is associative, false if not.
      */
-    public function isAssoc(array $arr) {
+    protected function isAssoc(array $arr) {
         if (array() === $arr) {
             return false;
         }
         return array_keys($arr) !== range(0, count($arr) - 1);
     }
 
-    public function rotateArray($array) {
+    protected function rotateArray($array) {
         $newArray = [];
         foreach ($array as $reverseKey => $reverseValue) {
             foreach ($reverseValue as $reverseSubKey => $reverseSubValue) {
@@ -25,11 +25,11 @@ class utilities {
         return $newArray;
     }
 
-    public function checkForSubArray($array) {
+    protected function checkForSubArray($array) {
         return is_array(reset($array));
     }
 
-    public function sanitizeInput($input, $type = null) {
+    protected function sanitizeInput($input, $type = null) {
         if (is_string($input)) {
             if (preg_match("/^\S+@\S+[\.]\S+$/", $input)) {
                 echo "huston, we got an email";
@@ -38,7 +38,7 @@ class utilities {
         return $input;
     }
 
-    public function cleanArray($arrayToClean, $arrayToCheckKeysFor) {
+    protected function cleanArray($arrayToClean, $arrayToCheckKeysFor) {
         if (!$this->isAssoc($arrayToCheckKeysFor)) {
             $arrayToCheckKeysFor = array_flip($arrayToCheckKeysFor);
         }
@@ -48,6 +48,10 @@ class utilities {
             }
         }
         return $arrayToClean;
+    }
+
+    protected function escapeBackSticks($var) {
+        return "`" . str_replace("`", "``", $var) . "`";
     }
 
 }
@@ -235,7 +239,8 @@ class database extends utilities {
      *
      */
     public function insertFromArray($params) {
-        $table = $params["table"];
+        $this->currentParams = [];
+        $table = $this->escapeBackSticks($params["table"]);
 
         $columns = "(";
         $defaultValues = "(";
@@ -260,10 +265,10 @@ class database extends utilities {
         $newValues = [];
         foreach ($columnInfo as $columnKey => $columnValue) {
             if (in_array($columnKey, $columnsNameFromParams)) {
-                $columnsOtherForQuery .= $columnKey . ",";
+                $columnsOtherForQuery .= $this->escapeBackSticks($columnKey) . ",";
                 $newValues[$columnKey] = $rotatedValues[$columnKey];
             } elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
-                $columns .= $columnKey . ',';
+                $columns .= $this->escapeBackSticks($columnKey) . ',';
                 $defaultValues .= "NULL,";
             }
         }
@@ -272,7 +277,6 @@ class database extends utilities {
         $multipleIncrementation = 0;
         $multiple = false;
         $newValues = $this->checkForSubArray($newValues) ? $this->rotateArray($newValues) : $newValues;
-        //print_r($newValues);
         foreach ($newValues as $field => $value) {
             if (is_array($value)) {
                 $multiple = true;
@@ -296,7 +300,9 @@ class database extends utilities {
             $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
         }
         $columns = substr($columns, 0, -1) . ")";
-        $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
+        echo $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
+        echo "<br>";
+        print_r($this->currentParams);
         return $this;
     }
 
