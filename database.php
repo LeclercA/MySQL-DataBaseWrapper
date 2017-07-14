@@ -15,7 +15,7 @@ class utilities {
         return array_keys($arr) !== range(0, count($arr) - 1);
     }
 
-    protected function rotateArray($array) {
+    public function rotateArray($array) {
         $newArray = [];
         foreach ($array as $reverseKey => $reverseValue) {
             foreach ($reverseValue as $reverseSubKey => $reverseSubValue) {
