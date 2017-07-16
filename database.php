@@ -195,11 +195,13 @@ class database extends utilities {
         $this->currentParams = [];
         $table = $this->escapeBackSticks($params["table"]);
 
-        $columns = "(";
-        $defaultValues = "(";
+        $columns = '(';
+        $defaultValues = '(';
         $columnsOtherForQuery = "";
+        $valuesToInsert = "";
+        $multiple = 0;
+        
         $columnInfo = $this->getTableInfo($table);
-
         $rotatedValues = !$this->isAssoc($params["values"]) ? $this->rotateArray($params["values"]) : $params["values"];
 
         //no memory leaks here boys
@@ -216,42 +218,35 @@ class database extends utilities {
         $newValues = [];
         foreach ($columnInfo as $columnKey => $columnValue) {
             if (in_array($columnKey, $columnsNameFromParams)) {
-                $columnsOtherForQuery .= $this->escapeBackSticks($columnKey) . ",";
+                $columnsOtherForQuery .= $this->escapeBackSticks($columnKey) . ',';
                 $newValues[$columnKey] = $rotatedValues[$columnKey];
             } elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
                 $columns .= $this->escapeBackSticks($columnKey) . ',';
                 $defaultValues .= "NULL,";
             }
         }
-        $columns = substr($columns . $columnsOtherForQuery, 0, -1) . ")";
-        $valuesToInsert = $defaultValues;
-        $multipleIncrementation = 0;
-        $multiple = false;
+        $columns = substr($columns . $columnsOtherForQuery, 0, -1) . ')';
+        
         $newValues = $this->checkForSubArray($newValues) ? $this->rotateArray($newValues) : $newValues;
         foreach ($newValues as $field => $value) {
+            $valuesToInsert .= $defaultValues;
             if (is_array($value)) {
-                $multiple = true;
                 foreach ($value as $multipleField => $multipleValue) {
-                    //Same as ...
-                    $valuesToInsert .= $this->setString($multipleField,$multipleValue,$multipleIncrementation);
+                    $valuesToInsert .= $this->setString($multipleField,$multipleValue,$multiple);
                 }
-                $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
-                $valuesToInsert .= "," . $defaultValues;
-                $multipleIncrementation++;
+                $valuesToInsert = substr($valuesToInsert, 0, -1) . "),";
+                $multiple++;
             } else {
-                //...this
                 $valuesToInsert .= $this->setString($field,$value);
             }
         }
-        if ($multiple) {
-            $valuesToInsert = substr($valuesToInsert, 0, -(strlen($defaultValues)) - 1);
-        } else {
-            $valuesToInsert = substr($valuesToInsert, 0, -1) . ")";
+
+        $valuesToInsert = substr($valuesToInsert, 0, -1);
+        if(!$multiple){
+            $valuesToInsert .= ')';
         }
-        $columns = substr($columns, 0, -1) . ")";
-        echo $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
-        echo "<br>";
-        print_r($this->currentParams);
+          
+        $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
         return $this;
     }
 
