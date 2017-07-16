@@ -1,4 +1,3 @@
-
 <?php
 
 class utilities {
@@ -8,7 +7,7 @@ class utilities {
      * @param array The array the verify
      * @return boolean true if array is associative, false if not.
      */
-    protected function isAssoc(array $arr) {
+    public function isAssoc(array $arr) {
         if (array() === $arr) {
             return false;
         }
@@ -25,32 +24,11 @@ class utilities {
         return $newArray;
     }
 
-    protected function checkForSubArray($array) {
+    public function checkForSubArray($array) {
         return is_array(reset($array));
     }
 
-    protected function sanitizeInput($input, $type = null) {
-        if (is_string($input)) {
-            if (preg_match("/^\S+@\S+[\.]\S+$/", $input)) {
-                echo "huston, we got an email";
-            }
-        }
-        return $input;
-    }
-
-    protected function cleanArray($arrayToClean, $arrayToCheckKeysFor) {
-        if (!$this->isAssoc($arrayToCheckKeysFor)) {
-            $arrayToCheckKeysFor = array_flip($arrayToCheckKeysFor);
-        }
-        foreach ($arrayToClean as $cleanKey => $cleanValue) {
-            if (!array_key_exists($cleanKey, $arrayToCheckKeysFor)) {
-                unset($arrayToClean[$cleanKey]);
-            }
-        }
-        return $arrayToClean;
-    }
-
-    protected function escapeBackSticks($var) {
+    public function escapeBackSticks($var) {
         return "`" . str_replace("`", "``", $var) . "`";
     }
 
@@ -58,14 +36,16 @@ class utilities {
 
 class database extends utilities {
 
-    public $dataBaseName;
-    public $host = "localhost";
-    public $user = "root";
-    public $password;
-    public $charSet = "utf8";
-    public $port = "3306";
     public $debugMode = false;
-    private $dataBaseType = "mysql";
+    private $options = [
+        "dbname" => "",
+        "host" => "localhost",
+        "user" => "root",
+        "password" => "",
+        "charset" => "utf8",
+        "port" => "3306"
+    ];
+    private $dbType = "mysql";
     private $data;
     private $connection;
     private $PDO;
@@ -77,26 +57,13 @@ class database extends utilities {
     private $lastQuery;
     private $keyword;
 
-    /**
-     * Constructor
-     *
-     *
-     * @param array $options :
-     *      Include the following options, in no particuliar ordor :
-     *          dataBaseName : the name of the schema [no default value]
-     *          dataBaseType : the type of database [default : "mysql"]
-     *          host : the name of the host [default : "localhost"]
-     *          user : the user that is going to use the database [default : "root"]
-     *          charSet : the charset of the database [default : "utf8"];
-     *          port : the port for the database [default : "3306"]
-     *          password : the password to connect to the database [no default value]
-     */
     public function __construct($options = null) {
         $connectionString = $this->contructSetter($options);
         try {
-            $this->connection = new PDO($connectionString, $this->user, $this->password);
-        } catch (Exception $e) {
-            trigger_error("Impossible to connect to the databse.");
+            $this->connection = new PDO($connectionString, $this->options["user"], $this->options["password"]);
+        } catch (PDOException $e) {
+            $this->currentErrorMessage = $e;
+            trigger_error($e);
         }
         //Cannot be removed
         $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -224,20 +191,6 @@ class database extends utilities {
         }
     }
 
-    /**
-     *  Takes an array as parameter and insert the data into the database
-     * @param array $params
-     *      table => the name of the table where you want to insert the data;
-     *      values => an array where the keys are your databaseField and the values are the values to insert
-     *      id =>  set the primary key. default : id, with value NULL. if set to false, no primary key with no value
-     *      reverse => bool. false or null or not exist if the element to insert are ready (ex : [0 => ['name'=> 'bob', 'age' => 12], 1 => ['name' => 'pablo', age => 13]] AND THAT ITS AN ASSOCIATIVE ARRAY ( index starts from 0 and go up by 1 each time)
-     *      If its an associative array, but the element are ready... nothing is going to work.
-     *      Set reverse to true if your data comes from a form (ex : ["name" => ["bob", "pablo"], "age" => [12,13]]
-     *      reverse is detected automaticly
-     * @example void $db->insertFromArray(["table" => "tasks", "values" => ["name" => "bob", "age" => 12]])->execute();
-     * @return database this
-     *
-     */
     public function insertFromArray($params) {
         $this->currentParams = [];
         $table = $this->escapeBackSticks($params["table"]);
@@ -302,15 +255,6 @@ class database extends utilities {
         return $this;
     }
 
-    /**
-     *  Takes an array as parameter and update the data into the database
-     * @param array $params
-     *      table => the name of the table where you want to update the data;
-     *      values => an array where the keys are your databaseField and the values are the values to update
-     *      condition => and array where the key is the databaseField and to value is the expression to look for
-     *
-     * @return void No return
-     */
     public function updateFromArray($params) {
         $query = "UPDATE " . $params["table"];
         $set = " SET ";
@@ -335,29 +279,16 @@ class database extends utilities {
     }
 
     private function contructSetter($options) {
-        $dataBaseString = "";
-        if ($options !== null) {
-            if (isset($options["dataBaseName"]) && !empty($options["dataBaseName"])) {
-                $this->dataBaseName = $options["dataBaseName"];
-                $dataBaseString = ";dbname=" . $this->dataBaseName;
-            }
-            if (isset($options["host"]) && !empty($options["host"])) {
-                $this->host = $options["host"];
-            }
-            if (isset($options["charSet"]) && !empty($options["charSet"])) {
-                $this->charSet = $options["charSet"];
-            }
-            if (isset($options["port"]) && !empty($options["port"])) {
-                $this->port = $options["port"];
-            }
-            if (isset($options["user"]) && !empty($options["user"])) {
-                $this->user = $options["user"];
-            }
-            if (isset($options["password"]) && !empty($options["password"])) {
-                $this->password = $options["password"];
+        $dataBaseString = $this->dbType . ":";
+        foreach($options as $key => $value){
+            if(array_key_exists($key,$this->options)){
+                $this->options[$key] = $value;
+                if($key !== "user" && $key !== "password"){
+                    $dataBaseString .= $key . "=" . $value . ";";
+                }
             }
         }
-        return $this->dataBaseType . ":host=" . $this->host . $dataBaseString . ";charset=" . $this->charSet . ";port=" . $this->password;
+        return substr($dataBaseString,0,-1);
     }
 
     private function resetParams() {
