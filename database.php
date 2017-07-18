@@ -43,7 +43,7 @@ class database extends utilities {
         "user" => "root",
         "password" => "",
         "charset" => "utf8",
-        "port" => "3306"
+        "port" => ""
     ];
     private $dbType = "mysql";
     private $data;
@@ -228,16 +228,19 @@ class database extends utilities {
         $columns = substr($columns . $columnsOtherForQuery, 0, -1) . ')';
         
         $newValues = $this->checkForSubArray($newValues) ? $this->rotateArray($newValues) : $newValues;
-        foreach ($newValues as $field => $value) {
-            $valuesToInsert .= $defaultValues;
+        $valuesToInsert .= $defaultValues;
+        foreach ($newValues as $field => $value) {  
             if (is_array($value)) {
+                if($multiple){
+                    $valuesToInsert .= $defaultValues;
+                }
                 foreach ($value as $multipleField => $multipleValue) {
                     $valuesToInsert .= $this->setString($multipleField,$multipleValue,$multiple);
                 }
                 $valuesToInsert = substr($valuesToInsert, 0, -1) . "),";
                 $multiple++;
             } else {
-                $valuesToInsert .= $this->setString($field,$value);
+                $valuesToInsert .= $this->setString($field,$value,0);
             }
         }
 
@@ -278,7 +281,7 @@ class database extends utilities {
         foreach($options as $key => $value){
             if(array_key_exists($key,$this->options)){
                 $this->options[$key] = $value;
-                if($key !== "user" && $key !== "password"){
+                if($key !== "user" && $key !== "password" && !empty($value)){
                     $dataBaseString .= $key . "=" . $value . ";";
                 }
             }
