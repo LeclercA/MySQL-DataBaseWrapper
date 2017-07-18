@@ -256,23 +256,21 @@ class database extends utilities {
     public function updateFromArray($params) {
         $query = "UPDATE " . $params["table"];
         $set = " SET ";
-        $parameters = [];
         $incrementation = 0;
         $where = " WHERE ";
         foreach ($params["values"] as $field => $value) {
-            $set .= $field . " = " . ":$field$incrementation,";
-            $parameters[":$field$incrementation"] = empty($value) ? NULL : $value;
+            $set .= $this->escapeBackSticks($field) . " = " . ":$field$incrementation,";
+            $this->currentParams[":$field$incrementation"] = empty($value) ? NULL : $value;
             $incrementation++;
         }
         foreach ($params["where"] as $field => $value) {
-            $where .= $field . " = " . ":$field$incrementation ";
-            $parameters[":$field$incrementation"] = empty($value) ? NULL : $value;
+            $where .= $this->escapeBackSticks($field) . " = " . ":$field$incrementation ";
+            $this->currentParams[":$field$incrementation"] = empty($value) ? NULL : $value;
             $incrementation++;
         }
         $set = substr($set, 0, -1);
         $query .= $set . $where;
         $this->currentQuery = $query;
-        $this->currentParams = $parameters;
         return $this;
     }
 
