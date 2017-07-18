@@ -200,7 +200,7 @@ class database extends utilities {
         $columnsOtherForQuery = "";
         $valuesToInsert = "";
         $multiple = 0;
-        
+
         $columnInfo = $this->getTableInfo($table);
         $rotatedValues = !$this->isAssoc($params["values"]) ? $this->rotateArray($params["values"]) : $params["values"];
 
@@ -226,29 +226,29 @@ class database extends utilities {
             }
         }
         $columns = substr($columns . $columnsOtherForQuery, 0, -1) . ')';
-        
+
         $newValues = $this->checkForSubArray($newValues) ? $this->rotateArray($newValues) : $newValues;
         $valuesToInsert .= $defaultValues;
-        foreach ($newValues as $field => $value) {  
+        foreach ($newValues as $field => $value) {
             if (is_array($value)) {
-                if($multiple){
+                if ($multiple) {
                     $valuesToInsert .= $defaultValues;
                 }
                 foreach ($value as $multipleField => $multipleValue) {
-                    $valuesToInsert .= $this->setString($multipleField,$multipleValue,$multiple);
+                    $valuesToInsert .= $this->setString($multipleField, $multipleValue, $multiple);
                 }
                 $valuesToInsert = substr($valuesToInsert, 0, -1) . "),";
                 $multiple++;
             } else {
-                $valuesToInsert .= $this->setString($field,$value,0);
+                $valuesToInsert .= $this->setString($field, $value, 0);
             }
         }
 
         $valuesToInsert = substr($valuesToInsert, 0, -1);
-        if(!$multiple){
+        if (!$multiple) {
             $valuesToInsert .= ')';
         }
-          
+
         $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
         return $this;
     }
@@ -278,15 +278,15 @@ class database extends utilities {
 
     private function contructSetter($options) {
         $dataBaseString = $this->dbType . ":";
-        foreach($options as $key => $value){
-            if(array_key_exists($key,$this->options)){
+        foreach ($options as $key => $value) {
+            if (array_key_exists($key, $this->options)) {
                 $this->options[$key] = $value;
-                if($key !== "user" && $key !== "password" && !empty($value)){
+                if ($key !== "user" && $key !== "password" && !empty($value)) {
                     $dataBaseString .= $key . "=" . $value . ";";
                 }
             }
         }
-        return substr($dataBaseString,0,-1);
+        return substr($dataBaseString, 0, -1);
     }
 
     private function resetParams() {
@@ -299,9 +299,9 @@ class database extends utilities {
     }
 
     private function getTableInfo($table) {
-        $this->PDO = $this->connection->query("SHOW COLUMNS FROM $table");
+        //can't prepare statement with table name
+        $info = $this->execute("SHOW COLUMNS FROM $table")->getResult();
         $columns = [];
-        $info = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
         foreach ($info as $key => $value) {
             $name = $value["Field"];
             $columns[$name]["type"] = explode('(', $value["Type"])[0];
@@ -311,9 +311,9 @@ class database extends utilities {
         return $columns;
     }
 
-    private function setString($field,$value,$increment = NULL){
+    private function setString($field, $value, $increment = NULL) {
         $this->currentParams[":$field" . $increment] = empty($value) ? NULL : $value;
-        return ":$field" . "$increment,";     
+        return ":$field" . "$increment,";
     }
 
 }
