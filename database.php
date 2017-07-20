@@ -203,16 +203,18 @@ class database extends utilities {
 
         $columnInfo = $this->getTableInfo($table);
         $rotatedValues = !$this->isAssoc($params["values"]) ? $this->rotateArray($params["values"]) : $params["values"];
-
         //no memory leaks here boys
         unset($params);
 
         //Having the same order is crucial. Sorting them by the key
-        ksort($columnInfo);
+        $columnInfo = array_change_key_case($columnInfo,CASE_LOWER);
+        $rotatedValues = array_change_key_case($rotatedValues,CASE_LOWER);
+        ksort($columnInfo);       
         ksort($rotatedValues);
-
+        
         $columnsNameFromParams = array_keys($rotatedValues);
-
+        //print_r($columnsNameFromParams);
+        //print_r($columnInfo);
         //For each column of the table, check if the name fits the column of the data. Also checks for autoincremented primary key
         //Could use array_intersect_key , but that would be two loop, because i would still need to check for the primary key
         $newValues = [];
@@ -301,7 +303,7 @@ class database extends utilities {
         $info = $this->execute("SHOW COLUMNS FROM $table")->getResult();
         $columns = [];
         foreach ($info as $key => $value) {
-            $name = $value["Field"];
+            $name = strtolower($value["Field"]);
             $columns[$name]["type"] = explode('(', $value["Type"])[0];
             $columns[$name]["primaryKey"] = $value["Key"] === "PRI";
             $columns[$name]["autoIncrement"] = $value["Extra"] === "auto_increment";
