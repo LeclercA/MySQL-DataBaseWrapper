@@ -207,11 +207,11 @@ class database extends utilities {
         unset($params);
 
         //Having the same order is crucial. Sorting them by the key
-        $columnInfo = array_change_key_case($columnInfo,CASE_LOWER);
-        $rotatedValues = array_change_key_case($rotatedValues,CASE_LOWER);
-        ksort($columnInfo);       
+        $columnInfo = array_change_key_case($columnInfo, CASE_LOWER);
+        $rotatedValues = array_change_key_case($rotatedValues, CASE_LOWER);
+        ksort($columnInfo);
         ksort($rotatedValues);
-        
+
         $columnsNameFromParams = array_keys($rotatedValues);
         //print_r($columnsNameFromParams);
         //print_r($columnInfo);
@@ -316,4 +316,23 @@ class database extends utilities {
         return ":$field" . "$increment,";
     }
 
+    public function createFormatedQuery($query = null, $params = null) {
+        $query = empty($query) ? $this->lastQuery : $query;
+        $params = empty($params) ? $this->lastParams : $params;
+        if (!empty($query) && !empty($params)) {
+            foreach ($params as $key => $value) {
+                if (!is_numeric($value)) {
+                    $value = "'$value'";
+                }
+                if (substr($key, 0, 1) === ':') {
+                    $query = str_replace($key, $value, $query);
+                } else {
+                    $query = substr_replace($query, $value . ",", strpos($query, "?"), strlen($value));
+                }
+            }
+            return $query;
+        } else {
+            return "Nothing to evaluate";
+        }
+    }
 }
