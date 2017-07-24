@@ -22,7 +22,7 @@ foreach ($className as $tableName) {
     fwrite($file, "\t }\n\n");
 
     fwrite($file, "\t" . 'public function delete($id) {' . "\n");
-    fwrite($file, "\t\t" . 'return $this->db->execute(\'DELETE FROM $table WHERE id = :id\', [\'id\' => $id])->getResult();' . "\n");
+    fwrite($file, "\t\t" . 'return $this->db->execute(\'DELETE FROM ' . $table . ' WHERE id = :id\', [\'id\' => $id])->getResult();' . "\n");
     fwrite($file, "\t }\n\n");
 
     fwrite($file, '}');
