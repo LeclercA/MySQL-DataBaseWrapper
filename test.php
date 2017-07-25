@@ -28,8 +28,8 @@ $testArrayReverse = [["name" => "Bob", "description" => 6],
 $testArrayReverse2 = ["name" => "Bob", "description" => 6];
 
 
-$db->insertFromArray(["table" => "employes", "values" => $testArrayAssoc]);
-$db->insertFromArray(["table" => "employes", "values" => $testArray2])->execute();
-$db->insertFromArray(["table" => "employes", "values" => $testArrayReverse])->execute();
-$db->insertFromArray(["table" => "employes", "values" => $testArrayReverse2])->execute();
+$db->insertFromArray(["table" => "employes", "values" => $testArrayAssoc])->execute()->getResult();
+$db->insertFromArray(["table" => "employes", "values" => $testArray2])->execute()->getResult();
+$db->insertFromArray(["table" => "employes", "values" => $testArrayReverse])->execute()->getResult();
+$db->insertFromArray(["table" => "employes", "values" => $testArrayReverse2])->execute()->getResult();
  

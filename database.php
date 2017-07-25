@@ -49,18 +49,9 @@ class database extends utilities {
     private $data;
     private $connection;
     private $PDO;
-
     private $currentErrorMessage;
-    private $lastErrorMessage;
-
     private $currentParams;
     private $currentQuery;
-
-    private $lastParams;
-    private $lastQuery;
-    private $errors = [];
-    private $queries = [];
-    private $params = [];
     private $keyword;
 
     public function __construct($options = null) {
@@ -82,31 +73,29 @@ class database extends utilities {
             case "lastId" : return $this->connection->lastInsertId();
             case "rows" : return $this->PDO->rowCount();
             case "currentErrorMessage" : return $this->currentErrorMessage;
-            case "lastErrorMessage" : return $this->lastErrorMessage;
         }
     }
 
     public function execute($query = null, $params = null) {
         if ($this->connection) {
             if (!empty($query)) {
-                $this->queries[] = $query;
+                $this->currentQuery = $query;
             }
-            
-            $this->lastErrorMessage = $this->currentErrorMessage;
-            $this->currentErrorMessage = NULL;
-            $this->keyword = strtolower(explode(' ', end($this->queries))[0]);
+            if(empty($this->currentParams)){
+                $this->currentParams = $params;
+            }
+            $this->keyword = strtolower(explode(' ', $this->currentQuery)[0]);
             if ($this->keyword === "select" || $this->keyword === "show") {
-                if (empty($params) && empty($this->currentParams)) {
+                if (empty($this->currentParams)) {
                     $this->executeSelectWithoutParams();
                 } else {
-                    $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
+            
                     $this->executeSelectWithParams();
                 }
             } else {
-                if (empty($params) && empty($this->currentParams)) {
+                if (empty($this->currentParams)) {
                     $this->executeDeleteInsetUpdateWithoutParams();
                 } else {
-                    $this->lastParams = empty($this->currentParams) ? $params : $this->currentParams;
                     $this->executeDeleteInsertUpdateWithParams();
                 }
             }
@@ -135,7 +124,7 @@ class database extends utilities {
 
     private function executeSelectWithoutParams() {
         try {
-            $this->PDO = $this->connection->query(end($this->queries));
+            $this->PDO = $this->connection->query($this->currentQuery);
             if ($this->connection->errorCode() !== "00000") {
                 $this->currentErrorMessage = $this->connection->errorInfo();
             }
@@ -147,11 +136,11 @@ class database extends utilities {
 
     private function executeSelectWithParams() {
         try {
-            $this->PDO = $this->connection->prepare(end($this->queries));
+            $this->PDO = $this->connection->prepare($this->currentQuery);
             if (!$this->PDO) {
                 $this->currentErrorMessage = $this->PDO->errorInfo();
             } else {
-                $this->PDO->execute($this->lastParams);
+                $this->PDO->execute($this->currentParams);
             }
         } catch (PDOException $e) {
             $this->currentErrorMessage = $e;
@@ -161,7 +150,7 @@ class database extends utilities {
 
     private function executeDeleteInsetUpdateWithoutParams() {
         try {
-            $val = $this->connection->exec(end($this->queries));
+            $val = $this->connection->exec($this->currentQuery);
             if ($this->connection->errorCode() !== "00000") {
                 $this->currentErrorMessage = $this->connection->errorInfo();
             } else {
@@ -175,11 +164,11 @@ class database extends utilities {
 
     private function executeDeleteInsertUpdateWithParams() {
         try {
-            $this->PDO = $this->connection->prepare(end($this->queries));
+            $this->PDO = $this->connection->prepare($this->currentQuery);
             if (!$this->PDO) {
                 $this->currentErrorMessage = $this->connection->errorInfo();
             } else {
-                $this->data = $this->PDO->execute($this->lastParams);
+                $this->data = $this->PDO->execute($this->currentParams);
             }
         } catch (PDOException $e) {
             $this->currentErrorMessage = $e;
@@ -190,14 +179,13 @@ class database extends utilities {
     private function displayErrorMessage() {
         if ($this->currentErrorMessage && $this->debugMode) {
             print_r($this->currentErrorMessage);
-            echo "QUERY => " . end($this->queries);
-            print_r($this->lastParams);
+            echo "QUERY => " . $this->currentQuery;
+            print_r($this->currentParams);
             trigger_error($this->currentErrorMessage);
         }
     }
 
     public function insertFromArray($params) {
-        $this->currentParams = [];
         $table = $this->escapeBackSticks($params["table"]);
 
         $columns = '(';
@@ -218,7 +206,8 @@ class database extends utilities {
         ksort($rotatedValues);
 
         $columnsNameFromParams = array_keys($rotatedValues);
-
+        //print_r($columnsNameFromParams);
+        //print_r($columnInfo);
         //For each column of the table, check if the name fits the column of the data. Also checks for autoincremented primary key
         //Could use array_intersect_key , but that would be two loop, because i would still need to check for the primary key
         $newValues = [];
@@ -255,7 +244,7 @@ class database extends utilities {
             $valuesToInsert .= ')';
         }
 
-        $this->queries[] = "INSERT INTO $table $columns VALUES $valuesToInsert";
+        echo $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
         return $this;
     }
 
@@ -276,7 +265,7 @@ class database extends utilities {
         }
         $set = substr($set, 0, -1);
         $query .= $set . $where;
-        $this->queries[] = $query . $set . $where;
+        $this->currentQuery = $query;
         return $this;
     }
 
@@ -294,9 +283,8 @@ class database extends utilities {
     }
 
     private function resetParams() {
-        $this->lastParams = $this->currentParams;
+        $this->currentQuery = NULL;
         $this->currentParams = NULL;
-        $this->lastErrorMessage = $this->currentErrorMessage;
         $this->currentErrorMessage = NULL;
     }
 
@@ -319,8 +307,8 @@ class database extends utilities {
     }
 
     public function createFormatedQuery($query = null, $params = null) {
-        $query = empty($query) ? end($this->queries) : $query;
-        $params = empty($params) ? $this->lastParams : $params;
+        $query = empty($query) ? $this->currentQuery : $query;
+        $params = empty($params) ? $this->currentParams : $params;
         if (!empty($query) && !empty($params)) {
             foreach ($params as $key => $value) {
                 if (!is_numeric($value)) {
