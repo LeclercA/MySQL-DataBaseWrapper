@@ -32,4 +32,3 @@ $db->insertFromArray(["table" => "employes", "values" => $testArrayAssoc])->exec
 $db->insertFromArray(["table" => "employes", "values" => $testArray2])->execute()->getResult();
 $db->insertFromArray(["table" => "employes", "values" => $testArrayReverse])->execute()->getResult();
 $db->insertFromArray(["table" => "employes", "values" => $testArrayReverse2])->execute()->getResult();
- 
