@@ -1,20 +1,22 @@
 <?php
-
-class utilities {
+class utilities
+{
 
     /**
      * Verify is the array provided is associative or not
      * @param array The array the verify
      * @return boolean true if array is associative, false if not.
      */
-    public function isAssoc(array $arr) {
+    public function isAssoc(array $arr)
+    {
         if (array() === $arr) {
             return false;
         }
         return array_keys($arr) !== range(0, count($arr) - 1);
     }
 
-    public function rotateArray($array) {
+    public function rotateArray($array)
+    {
         $newArray = [];
         foreach ($array as $reverseKey => $reverseValue) {
             foreach ($reverseValue as $reverseSubKey => $reverseSubValue) {
@@ -24,17 +26,20 @@ class utilities {
         return $newArray;
     }
 
-    public function checkForSubArray($array) {
+    public function checkForSubArray($array)
+    {
         return is_array(reset($array));
     }
 
-    public function escapeBackSticks($var) {
+    public function escapeBackSticks($var)
+    {
         return "`" . str_replace("`", "``", $var) . "`";
     }
 
 }
 
-class database extends utilities {
+class database extends utilities
+{
 
     public $debugMode = false;
     private $options = [
@@ -49,17 +54,23 @@ class database extends utilities {
     private $data;
     private $connection;
     private $PDO;
-    private $currentErrorMessage;
+
+    private $errorMessage;
+
+
     private $currentParams;
+
+    private $lastQuery;
     private $currentQuery;
     private $keyword;
 
-    public function __construct($options = null) {
+    public function __construct($options = null)
+    {
         $connectionString = $this->contructSetter($options);
         try {
             $this->connection = new PDO($connectionString, $this->options["user"], $this->options["password"]);
         } catch (PDOException $e) {
-            $this->currentErrorMessage = $e;
+            $this->errorMessage = $e;
             trigger_error($e);
         }
         //Cannot be removed
@@ -67,54 +78,51 @@ class database extends utilities {
         $this->connection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     }
 
-    public function __get($name) {
+    public function __get($name)
+    {
         switch ($name) {
-            case "data" : return $this->data;
-            case "lastId" : return $this->connection->lastInsertId();
-            case "rows" : return $this->PDO->rowCount();
-            case "currentErrorMessage" : return $this->currentErrorMessage;
+            case "data" :
+                return $this->data;
+            case "lastId" :
+                return $this->connection->lastInsertId();
+            case "rows" :
+                return $this->PDO->rowCount();
+            case "errorMessage" :
+                return $this->errorMessage;
         }
     }
 
-    public function execute($query = null, $params = null) {
+    public function execute($query = null, $params = null)
+    {
         if ($this->connection) {
             if (!empty($query)) {
                 $this->currentQuery = $query;
             }
-            if(empty($this->currentParams)){
+            if (empty($this->currentParams)) {
                 $this->currentParams = $params;
             }
             $this->keyword = strtolower(explode(' ', $this->currentQuery)[0]);
             if ($this->keyword === "select" || $this->keyword === "show") {
-                if (empty($this->currentParams)) {
-                    $this->executeSelectWithoutParams();
-                } else {
-            
-                    $this->executeSelectWithParams();
-                }
-            } else {
-                if (empty($this->currentParams)) {
-                    $this->executeDeleteInsetUpdateWithoutParams();
-                } else {
-                    $this->executeDeleteInsertUpdateWithParams();
-                }
+                $this->executeSelect();
+            }else {
+                $this->executeUpdate();
             }
             return $this;
-        } else {
-            if ($this->debugMode) {
-                echo "No connection to the database, can't do queries";
-            } else {
-                trigger_error("No connection to the database, can't do queries");
-            }
+        }
+        else {
+            trigger_error("No connection to the database, can't do queries");
         }
     }
 
-    public function getResult($fetchMethod = null) {
+
+    public function getResult($fetchMethod = null)
+    {
         $this->displayErrorMessage();
         if ($this->keyword === "select" || $this->keyword === "show") {
             if ($fetchMethod === "firstRow") {
                 $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
-            } else {
+            }
+            else {
                 $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
             }
         }
@@ -122,70 +130,54 @@ class database extends utilities {
         return $this->data;
     }
 
-    private function executeSelectWithoutParams() {
+    private function executeSelect()
+    {
         try {
-            $this->PDO = $this->connection->query($this->currentQuery);
-            if ($this->connection->errorCode() !== "00000") {
-                $this->currentErrorMessage = $this->connection->errorInfo();
+            if ($this->currentQuery !== $this->lastQuery) {
+                $this->PDO = $this->connection->prepare($this->currentQuery);
             }
-        } catch (PDOException $e) {
-            $this->currentErrorMessage = $e;
-            trigger_error($e);
-        }
-    }
-
-    private function executeSelectWithParams() {
-        try {
-            $this->PDO = $this->connection->prepare($this->currentQuery);
             if (!$this->PDO) {
-                $this->currentErrorMessage = $this->PDO->errorInfo();
-            } else {
+                $this->errorMessage = $this->PDO->errorInfo();
+            }
+            else {
                 $this->PDO->execute($this->currentParams);
             }
         } catch (PDOException $e) {
-            $this->currentErrorMessage = $e;
+            $this->errorMessage = $e;
             trigger_error($e);
         }
     }
 
-    private function executeDeleteInsetUpdateWithoutParams() {
+    private function executeUpdate()
+    {
         try {
-            $val = $this->connection->exec($this->currentQuery);
-            if ($this->connection->errorCode() !== "00000") {
-                $this->currentErrorMessage = $this->connection->errorInfo();
-            } else {
-                $this->data = $val;
+            if ($this->currentQuery !== $this->lastQuery) {
+                $this->PDO = $this->connection->prepare($this->currentQuery);
             }
-        } catch (PDOException $e) {
-            $this->currentErrorMessage = $e;
-            trigger_error($e);
-        }
-    }
-
-    private function executeDeleteInsertUpdateWithParams() {
-        try {
-            $this->PDO = $this->connection->prepare($this->currentQuery);
             if (!$this->PDO) {
-                $this->currentErrorMessage = $this->connection->errorInfo();
-            } else {
+                $this->errorMessage = $this->connection->errorInfo();
+            }
+            else {
                 $this->data = $this->PDO->execute($this->currentParams);
             }
         } catch (PDOException $e) {
-            $this->currentErrorMessage = $e;
+            $this->errorMessage = $e;
             trigger_error($e);
         }
     }
 
-    private function displayErrorMessage() {
-        if ($this->currentErrorMessage && $this->debugMode) {
-            print_r($this->currentErrorMessage);
+    private function displayErrorMessage()
+    {
+        if ($this->errorMessage && $this->debugMode) {
+            print_r($this->errorMessage);
             echo "QUERY => " . $this->currentQuery;
             print_r($this->currentParams);
-            trigger_error($this->currentErrorMessage);
+            trigger_error($this->errorMessage);
         }
     }
 
-    public function insertFromArray($params) {
+    public function insertFromArray($params)
+    {
         $table = $this->escapeBackSticks($params["table"]);
 
         $columns = '(';
@@ -215,7 +207,8 @@ class database extends utilities {
             if (in_array($columnKey, $columnsNameFromParams)) {
                 $columnsOtherForQuery .= $this->escapeBackSticks($columnKey) . ',';
                 $newValues[$columnKey] = $rotatedValues[$columnKey];
-            } elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
+            }
+            elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
                 $columns .= $this->escapeBackSticks($columnKey) . ',';
                 $defaultValues .= "NULL,";
             }
@@ -234,7 +227,8 @@ class database extends utilities {
                 }
                 $valuesToInsert = substr($valuesToInsert, 0, -1) . "),";
                 $multiple++;
-            } else {
+            }
+            else {
                 $valuesToInsert .= $this->setString($field, $value, 0);
             }
         }
@@ -248,7 +242,8 @@ class database extends utilities {
         return $this;
     }
 
-    public function updateFromArray($params) {
+    public function updateFromArray($params)
+    {
         $query = "UPDATE " . $params["table"];
         $set = " SET ";
         $incrementation = 0;
@@ -269,7 +264,8 @@ class database extends utilities {
         return $this;
     }
 
-    private function contructSetter($options) {
+    private function contructSetter($options)
+    {
         $dataBaseString = $this->dbType . ":";
         foreach ($options as $key => $value) {
             if (array_key_exists($key, $this->options)) {
@@ -282,13 +278,16 @@ class database extends utilities {
         return substr($dataBaseString, 0, -1);
     }
 
-    private function resetParams() {
+    private function resetParams()
+    {
+        $this->lastQuery = $this->currentQuery;
         $this->currentQuery = NULL;
         $this->currentParams = NULL;
-        $this->currentErrorMessage = NULL;
+        $this->errorMessage = NULL;
     }
 
-    private function getTableInfo($table) {
+    private function getTableInfo($table)
+    {
         //can't prepare statement with table name
         $info = $this->execute("SHOW COLUMNS FROM $table")->getResult();
         $columns = [];
@@ -301,12 +300,14 @@ class database extends utilities {
         return $columns;
     }
 
-    private function setString($field, $value, $increment = NULL) {
+    private function setString($field, $value, $increment = NULL)
+    {
         $this->currentParams[":$field" . $increment] = empty($value) ? NULL : $value;
         return ":$field" . "$increment,";
     }
 
-    public function createFormatedQuery($query = null, $params = null) {
+    public function createFormatedQuery($query = null, $params = null)
+    {
         $query = empty($query) ? $this->currentQuery : $query;
         $params = empty($params) ? $this->currentParams : $params;
         if (!empty($query) && !empty($params)) {
@@ -316,12 +317,14 @@ class database extends utilities {
                 }
                 if (substr($key, 0, 1) === ':') {
                     $query = str_replace($key, $value, $query);
-                } else {
+                }
+                else {
                     $query = substr_replace($query, $value . ",", strpos($query, "?"), strlen($value));
                 }
             }
             return $query;
-        } else {
+        }
+        else {
             return "Nothing to evaluate";
         }
     }
