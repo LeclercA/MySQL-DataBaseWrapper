@@ -35,6 +35,10 @@ class utilities
     {
         return "`" . str_replace("`", "``", $var) . "`";
     }
+    
+    public function roundNumberWithTwoFloat($val) {
+        return number_format(round($val, 2), 2, '.', '');
+    }
 
 }
 
