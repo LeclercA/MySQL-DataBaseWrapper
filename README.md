@@ -8,3 +8,4 @@ My own PHP database wrapper for easy query
 [ ] Make with so when a table is in another schema, the escapeWithBackSticks remove the dot from the string ( ex 'bob.table' => 'bob'.'table' )
 
 [ ] Find a way to retrieve information like mysqli_info();
+[ ] Accept parameters for `WHERE IN (? ? ? ?)` *array_merge*
