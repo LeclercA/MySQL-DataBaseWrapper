@@ -12,3 +12,5 @@ My own PHP database wrapper for easy query
 [ ] Accept parameters for `WHERE IN (? ? ? ?)` *array_merge*
 
 [ ] Set alias for table in the config
+
+[ ] check `$this->connection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);` with `true`
