@@ -14,3 +14,5 @@ My own PHP database wrapper for easy query
 [ ] Set alias for table in the config
 
 [ ] check `$this->connection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);` with `true`
+
+[ ] Add to .CSV method (or other type of file)
