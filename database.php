@@ -332,4 +332,17 @@ class database extends utilities
             return "Nothing to evaluate";
         }
     }
+    
+    public function queryToCSV($query = null, $params = null) {
+        if (!empty($query)) {
+            $this->currentQuery = $query;
+        }
+        if (empty($this->currentParams)) {
+            $this->currentParams = $params;
+        }
+        unlink("/var/lib/mysql-files/codes.csv");
+        $this->currentQuery = substr_replace($this->currentQuery, " INTO OUTFILE '/var/lib/mysql-files/codes.csv' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' ", stripos($this->currentQuery, "FROM"), 0);
+        $this->execute();
+    }
+    
 }
