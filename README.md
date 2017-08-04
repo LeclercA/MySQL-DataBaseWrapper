@@ -16,3 +16,5 @@ My own PHP database wrapper for easy query
 [ ] check `$this->connection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);` with `true`
 
 [ ] Add to .CSV method (or other type of file)
+
+[ ] Re-do all
