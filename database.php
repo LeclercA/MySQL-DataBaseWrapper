@@ -33,7 +33,11 @@ class utilities
 
     public function escapeBackSticks($var)
     {
-        return "`" . str_replace("`", "``", $var) . "`";
+        $string = explode(".",$var);
+        foreach($string as $key => $singleString){
+            $string[$key] = "`" . str_replace("`", "``", $singleString) . "`";
+        }
+        return implode('.',$string);
     }
     
     public function roundNumberWithTwoFloat($val) {
@@ -94,6 +98,22 @@ class database extends utilities
             case "errorMessage" :
                 return $this->errorMessage;
         }
+    }
+
+    public function delete($table){
+        $query = "DELETE FROM" . $this->escapeBackSticks($table);
+    }
+
+    public function select($table,$fields,$condition = null){
+        $query = "SELECT ";
+        foreach($fields as $fName => $fValue){
+            
+            $tempValue = !empty($fValue) ? $fValue : $fName;
+            $tempName = !is_int($fName) ? $fName : $fValue;
+            $query .= $this->escapeBackSticks($tempName) . " AS " . $this->escapeBackSticks($tempValue) . ", ";
+        }
+        $query = substr($query,0,-2) . " FROM " . $this->escapeBackSticks($table);
+        echo $query;
     }
 
     public function execute($query = null, $params = null)

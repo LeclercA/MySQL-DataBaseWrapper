@@ -29,22 +29,10 @@ $testArrayReverse = [
 
 $testArrayReverse2 = ["name" => "Bob", "description" => 6];
 
+#echo $db->escapeBackSticks("employe.employes");
 
-$bd = new PDO("mysql:dbname=employe;host=localhost", "root", "");
-$time = microtime(true);
-$query = "UPDATE employes SET name='Bob' WHERE id = 91";
-for ($i = 0; $i < 2500; $i++) {
-    $pdo = $bd->exec($query);
-}
+$db->select("employe.employes",["name"]);
 
-echo "End#1 = " . (microtime(true) - $time);
-
-$time = microtime(true);
-for ($i = 0; $i < 2500; $i++) {
-    $db->execute("UPDATE employes SET name= ? WHERE id = ?", ["Bob", 91])->getResult();
-}
-
-echo "End#2 = " . (microtime(true) - $time);
 //$db->insertFromArray(["table" => "employes", "values" => $testArrayAssoc])->execute()->getResult();
 //$db->insertFromArray(["table" => "employes", "values" => $testArray2])->execute()->getResult();
 //$db->insertFromArray(["table" => "employes", "values" => $testArrayReverse])->execute()->getResult();
