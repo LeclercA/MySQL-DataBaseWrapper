@@ -18,3 +18,5 @@ My own PHP database wrapper for easy query
 [ ] Add to .CSV method (or other type of file)
 
 [ ] Re-do all
+
+[ ] Change the `execute` function to `select`,`insert`,`update`,`delete`
