@@ -33,14 +33,15 @@ class utilities
 
     public function escapeBackSticks($var)
     {
-        $string = explode(".",$var);
-        foreach($string as $key => $singleString){
+        $string = explode(".", $var);
+        foreach ($string as $key => $singleString) {
             $string[$key] = "`" . str_replace("`", "``", $singleString) . "`";
         }
-        return implode('.',$string);
+        return implode('.', $string);
     }
-    
-    public function roundNumberWithTwoFloat($val) {
+
+    public function roundNumberWithTwoFloat($val)
+    {
         return number_format(round($val, 2), 2, '.', '');
     }
 
@@ -100,19 +101,30 @@ class database extends utilities
         }
     }
 
-    public function delete($table){
+    public function delete($table,$condition = null)
+    {
         $query = "DELETE FROM" . $this->escapeBackSticks($table);
+        if(!empty($condition)){
+            if(is_array($condition)){
+
+            }
+        }
     }
 
-    public function select($table,$fields,$condition = null){
+    public function select($table, $fields, $condition = null)
+    {
         $query = "SELECT ";
-        foreach($fields as $fName => $fValue){
-            
-            $tempValue = !empty($fValue) ? $fValue : $fName;
-            $tempName = !is_int($fName) ? $fName : $fValue;
-            $query .= $this->escapeBackSticks($tempName) . " AS " . $this->escapeBackSticks($tempValue) . ", ";
+        foreach ($fields as $fName => $fValue) {
+            if (strpos($fValue, '*') !== false) {
+                $query .= '*, ';
+            }
+            else {
+                $tempValue = !empty($fValue) ? $fValue : $fName;
+                $tempName = !is_int($fName) ? $fName : $fValue;
+                $query .= $this->escapeBackSticks($tempName) . " AS " . $this->escapeBackSticks($tempValue) . ", ";
+            }
         }
-        $query = substr($query,0,-2) . " FROM " . $this->escapeBackSticks($table);
+        $query = substr($query, 0, -2) . " FROM " . $this->escapeBackSticks($table);
         echo $query;
     }
 
@@ -128,7 +140,8 @@ class database extends utilities
             $this->keyword = strtolower(explode(' ', $this->currentQuery)[0]);
             if ($this->keyword === "select" || $this->keyword === "show") {
                 $this->executeSelect();
-            }else {
+            }
+            else {
                 $this->executeUpdate();
             }
             return $this;
@@ -352,8 +365,9 @@ class database extends utilities
             return "Nothing to evaluate";
         }
     }
-    
-    public function queryToCSV($query = null, $params = null) {
+
+    public function queryToCSV($query = null, $params = null)
+    {
         if (!empty($query)) {
             $this->currentQuery = $query;
         }
@@ -364,5 +378,5 @@ class database extends utilities
         $this->currentQuery = substr_replace($this->currentQuery, " INTO OUTFILE '/var/lib/mysql-files/codes.csv' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' ", stripos($this->currentQuery, "FROM"), 0);
         $this->execute();
     }
-    
+
 }

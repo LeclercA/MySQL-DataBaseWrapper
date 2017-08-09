@@ -31,7 +31,7 @@ $testArrayReverse2 = ["name" => "Bob", "description" => 6];
 
 #echo $db->escapeBackSticks("employe.employes");
 
-$db->select("employe.employes",["name"]);
+$db->select("employe.employes",["name","*"]);
 
 //$db->insertFromArray(["table" => "employes", "values" => $testArrayAssoc])->execute()->getResult();
 //$db->insertFromArray(["table" => "employes", "values" => $testArray2])->execute()->getResult();
