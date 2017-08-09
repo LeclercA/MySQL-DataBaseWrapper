@@ -1,22 +1,22 @@
 <?php
-class utilities
-{
+
+class utilities {
 
     /**
      * Verify is the array provided is associative or not
-     * @param array The array the verify
+     * @param array $array The array to verify
      * @return boolean true if array is associative, false if not.
      */
-    public function isAssoc(array $arr)
-    {
-        if (array() === $arr) {
-            return false;
-        }
-        return array_keys($arr) !== range(0, count($arr) - 1);
+    public function is_assoc(array $array) {
+        return is_array($array) && array_keys($array) !== range(0, count($array) - 1);
     }
 
-    public function rotateArray($array)
-    {
+    /**
+     * Rotate the array. Change the position of the keys and values
+     * @param array $array The array to rotate
+     * @return array The rotated array
+     */
+    public function rotate_array(array $array) {
         $newArray = [];
         foreach ($array as $reverseKey => $reverseValue) {
             foreach ($reverseValue as $reverseSubKey => $reverseSubValue) {
@@ -26,21 +26,37 @@ class utilities
         return $newArray;
     }
 
-    public function checkForSubArray($array)
-    {
-        return is_array(reset($array));
+    /**
+     * Check if the values of the provided array are all array
+     * @param array $array The array to check
+     * @return bool true if the array contains only array, false otherwise
+     */
+    public function contains_only_array(array $array) {
+        $i = 0;
+        $notFound = true;
+        while (isset($array[$i]) && $i < count($array) && $notFound) {
+            if (!is_array($array[$i])) {
+                $notFound = false;
+            }
+            $i++;
+        }
+        return $notFound;
     }
 
-    public function escapeBackSticks($var)
-    {
-        $string = explode(".",$var);
-        foreach($string as $key => $singleString){
+    /**
+     * Take a string and espace it with backstick '`'
+     * @param string $var
+     * @return string The escaped string
+     */
+    public function escape_backsticks($var) {
+        $string = explode(".", $var);
+        foreach ($string as $key => $singleString) {
             $string[$key] = "`" . str_replace("`", "``", $singleString) . "`";
         }
-        return implode('.',$string);
+        return implode('.', $string);
     }
-    
-    public function roundNumberWithTwoFloat($val) {
+
+    public function round_number_two_decimal($val) {
         return number_format(round($val, 2), 2, '.', '');
     }
 
