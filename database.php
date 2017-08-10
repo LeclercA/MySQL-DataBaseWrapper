@@ -240,12 +240,12 @@ public $debugMode = false;
                 } catch (Exception $e) {
                     $this->errorMessage = $e;
                     trigger_error($e);
+                } finally {
+                    $this->resetParams();
                 }
             }
-
             return $this->data;
         }
-        $this->resetParams();
     }
 
     private function executeSelect() {
