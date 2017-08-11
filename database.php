@@ -447,3 +447,25 @@ public $debugMode = false;
 
     
 }
+
+
+$command = [
+    "ALTER" => ["DATABASE","EVENT","FUNCTION","INSTANCE","LOGFILE GROUP","PROCEDURE","SERVER","TABLE","TABLENAME","VIEW"],
+    "CREATE" => ["DATABASE","EVENT","FUNCTION","INDEX","LOGFILE GROUP","PROCEDURE","SERVER","TABLE","TABLENAME","TRIGGER","VIEW"],
+    "DROP" => ["DATABASE","EVENT","FUNCTION","INDEX","LOGFILE GROUP","PROCEDURE","SERVER","TABLE","TABLENAME","TRIGGER","VIEW"],
+    "RENAME" => ["TABLE"],
+    "TRUNCATE" =>["TABLE"]
+];
+
+$command = [
+    "CALL",
+    "DELETE",
+    "DO",
+    "HANDLER",
+    "INSERT",
+    "LOAD DATA INFILE",
+    "LOAD XAML",
+    "REPLACE",
+    "SELECT",
+    "UPDATE"
+];
