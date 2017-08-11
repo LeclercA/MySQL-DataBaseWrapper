@@ -146,6 +146,15 @@ class utilities {
         return strtr($var,$specialChars);
     }
     
+    /**
+     * Check if all the value of an array an empty or not.
+     * @param array $array To array to evaluate
+     * @return bool Return true if the $array is empty, return true if not 
+     */
+    public function array_empty($array){
+        return strlen(implode($array)) === 0;
+    }
+    
 }
 
 class database extends utilities
