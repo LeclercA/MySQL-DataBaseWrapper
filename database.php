@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 class utilities
 {
 
@@ -7,7 +10,7 @@ class utilities
      * @param array $array The array to verify
      * @return boolean true if array is associative, false if not.
      */
-    public function is_assoc(array $array)
+    public function is_assoc(array $array) : bool
     {
         return is_array($array) && array_keys($array) !== range(0, count($array) - 1);
     }
@@ -17,7 +20,7 @@ class utilities
      * @param array $array The array to rotate
      * @return array The rotated array
      */
-    public function rotate_array(array $array)
+    public function rotate_array(array $array) : array
     {
         $newArray = [];
         foreach ($array as $reverseKey => $reverseValue) {
@@ -33,7 +36,7 @@ class utilities
      * @param array $array The array to check
      * @return bool true if the array contains only array, false otherwise
      */
-    public function contains_only_array(array $array)
+    public function contains_only_array(array $array) : bool
     {
         $i = 0;
         $notFound = true;
@@ -51,7 +54,7 @@ class utilities
      * @param string $var
      * @return string The escaped string
      */
-    public function escape_backsticks($var)
+    public function escape_backsticks(string $var) : string
     {
         $string = explode(".", $var);
         foreach ($string as $key => $singleString) {
@@ -60,7 +63,7 @@ class utilities
         return implode('.', $string);
     }
 
-    public function round_number_two_decimal($val)
+    public function round_number_two_decimal(string $val) : string
     {
         return number_format(round($val, 2), 2, '.', '');
     }
@@ -69,7 +72,7 @@ class utilities
      * @param int $length The length of the random word. Default : 10
      * @return string The random word generated 
      */
-    public function random_string($length = 10)
+    public function random_string(int $length = 10) : string
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $randomString = '';
@@ -84,7 +87,7 @@ class utilities
      * @param array $data The data to create marks from
      * @return string The string containing the interrogation marks
      */
-    public function create_marks($data)
+    public function create_marks(array $data) : string
     {
         return str_repeat('?,', count($data) - 1) . '?';
     }
@@ -94,7 +97,7 @@ class utilities
      * @param string $var The string to remove the special characters from
      * @return string The string after removing the special characters
      */
-    public function remove_special_chars($var)
+    public function remove_special_chars(string $var) : string
     {
         $specialChars = [
             '&amp;' => 'and', '@' => 'at', '©' => 'c', '®' => 'r', 'À' => 'a',
@@ -428,13 +431,13 @@ class database extends utilities
         return $columns;
     }
 
-    private function setString(string $field,mixed $value,int $increment = NULL) : string
+    private function setString(string $field, mixed $value, int $increment = NULL) : string
     {
         $this->currentParams[":$field" . $increment] = empty($value) ? NULL : $value;
         return ":$field" . "$increment,";
     }
 
-    public function createFormatedQuery(string $query = null,array $params = null) : string
+    public function createFormatedQuery(string $query = null, array $params = null) : string
     {
         $query = empty($query) ? $this->currentQuery : $query;
         $params = empty($params) ? $this->currentParams : $params;
@@ -458,21 +461,32 @@ class database extends utilities
     }
 
 
-    public function delete($table)
+    public function delete(string $table, array $where = null)
     {
-        $query = "DELETE FROM" . $this->escape_backsticks($table);
+        $query = "DELETE FROM " . $this->escape_backsticks($table);
+        if($this->util->array_empty($where)){
+            $query .= " WHERE ";
+            if(count($where) === 1){
+                
+            }
+        }
+        return $this;
     }
 
     public function select($table, $fields, $condition = null)
     {
         $query = "SELECT ";
         foreach ($fields as $fName => $fValue) {
-
-            $tempValue = !empty($fValue) ? $fValue : $fName;
-            $tempName = !is_int($fName) ? $fName : $fValue;
-            $query .= $this->escape_backsticks($tempName) . " AS " . $this->escape_backsticks($tempValue) . ", ";
+            if (strpos($fValue, '*') !== false) {
+                $query .= '*, ';
+            }
+            else {
+                $tempValue = !empty($fValue) ? $fValue : $fName;
+                $tempName = !is_int($fName) ? $fName : $fValue;
+                $query .= $this->escapeBackSticks($tempName) . " AS " . $this->escapeBackSticks($tempValue) . ", ";
+            }
         }
-        $query = substr($query, 0, -2) . " FROM " . $this->escape_backsticks($table);
+        $query = substr($query, 0, -2) . " FROM " . $this->escapeBackSticks($table);
         echo $query;
     }
 
