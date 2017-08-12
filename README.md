@@ -5,11 +5,11 @@ My own PHP database wrapper for easy query
 
 [x] Put back the lastQuery, to check if the query is the same to need rePrepare it (it is faster)
 
-[ ] Make with so when a table is in another schema, the escapeWithBackSticks remove the dot from the string ( ex 'bob.table' => 'bob'.'table' )
+[x] Make with so when a table is in another schema, the escapeWithBackSticks remove the dot from the string ( ex 'bob.table' => 'bob'.'table' )
 
 [ ] Find a way to retrieve information like mysqli_info();
 
-[ ] Accept parameters for `WHERE IN (? ? ? ?)` *array_merge*
+[x] Accept parameters for `WHERE IN (? ? ? ?)` *array_merge*
 
 [ ] Set alias for table in the config
 
