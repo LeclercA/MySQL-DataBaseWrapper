@@ -1,6 +1,5 @@
 <?php
-
-declare(strict_types=1);
+declare (strict_types = 1);
 
 class utilities
 {
@@ -193,6 +192,13 @@ class database extends utilities
     private $keyword;
     private $util;
 
+
+    const ALL = 0;
+    const FIRST_ROW = 1;
+    const COLUMN = 2;
+
+
+
     public function __construct(array $options = null)
     {
 
@@ -253,7 +259,7 @@ class database extends utilities
         }
     }
 
-    public function getResult(string $fetchMethod = null)
+    public function getResult(self $fetchMethod = null)
     {
         $this->displayErrorMessage();
         if (empty($this->errorMessage)) {
@@ -355,7 +361,7 @@ class database extends utilities
             }
             elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
                 $columns .= $this->util->escape_backsticks($columnKey) . ',';
-                $defaultValues .= "NULL,";
+                $defaultValues .= "null,";
             }
         }
         $columns = substr($columns . $columnsOtherForQuery, 0, -1) . ')';
@@ -394,12 +400,12 @@ class database extends utilities
         $where = " WHERE ";
         foreach ($params["values"] as $field => $value) {
             $set .= $this->util->escape_backsticks($field) . " = " . ":$field$incrementation,";
-            $this->currentParams[":$field$incrementation"] = empty($value) ? NULL : $value;
+            $this->currentParams[":$field$incrementation"] = empty($value) ? null : $value;
             $incrementation++;
         }
         foreach ($params["where"] as $field => $value) {
             $where .= $this->util->escape_backsticks($field) . " = " . ":$field$incrementation ";
-            $this->currentParams[":$field$incrementation"] = empty($value) ? NULL : $value;
+            $this->currentParams[":$field$incrementation"] = empty($value) ? null : $value;
             $incrementation++;
         }
         $set = substr($set, 0, -1);
@@ -411,10 +417,10 @@ class database extends utilities
     private function resetParams()
     {
         $this->lastQuery = $this->currentQuery;
-        $this->currentQuery = NULL;
-        $this->currentParams = NULL;
+        $this->currentQuery = null;
+        $this->currentParams = null;
         $this->lastErrorMessage = $this->errorMessage;
-        $this->errorMessage = NULL;
+        $this->errorMessage = null;
     }
 
     private function getTableInfo(string $table) : array
@@ -431,9 +437,9 @@ class database extends utilities
         return $columns;
     }
 
-    private function setString(string $field, mixed $value, int $increment = NULL) : string
+    private function setString(string $field, mixed $value, int $increment = null) : string
     {
-        $this->currentParams[":$field" . $increment] = empty($value) ? NULL : $value;
+        $this->currentParams[":$field" . $increment] = empty($value) ? null : $value;
         return ":$field" . "$increment,";
     }
 
@@ -464,10 +470,10 @@ class database extends utilities
     public function delete(string $table, array $where = null)
     {
         $query = "DELETE FROM " . $this->escape_backsticks($table);
-        if($this->util->array_empty($where)){
+        if ($this->util->array_empty($where)) {
             $query .= " WHERE ";
-            if(count($where) === 1){
-                
+            if (count($where) === 1) {
+
             }
         }
         return $this;
