@@ -175,7 +175,7 @@ class Database extends Utilities
         $multiple = 0;
 
         $columnInfo = $this->getTableInfo($table);
-        $rotatedValues = !$this->util->isAssoc($params["values"]) ? $this->util->rotateArray($params["values"]) : $params["values"];
+        $rotatedValues = $this->util->isAssoc($params["values"]) ? $params["values"] : $this->util->rotateArray($params["values"]);
         //no memory leaks here boys
         unset($params);
 
