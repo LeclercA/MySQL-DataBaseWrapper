@@ -2,7 +2,7 @@
 
 declare (strict_types = 1);
 
-use Utilities;
+require "Utilities.php";
 class Database extends Utilities
 {
 
