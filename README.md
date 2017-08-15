@@ -20,3 +20,5 @@ My own PHP database wrapper for easy query
 [ ] Re-do all
 
 [ ] Change the `execute` function to `select`,`insert`,`update`,`delete`
+
+[ ] Delete this
