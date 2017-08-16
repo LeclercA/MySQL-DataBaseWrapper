@@ -2,8 +2,8 @@
 
 declare (strict_types = 1);
 
-require "Utilities.php";
-class Database extends Utilities
+require 'Utilities.php';
+class Database
 {
 
     public $debugMode = false;
@@ -25,7 +25,6 @@ class Database extends Utilities
     private $lastQuery;
     private $currentQuery;
     private $keyword;
-    private $util;
 
 
     const ALL = 0;
@@ -54,7 +53,6 @@ class Database extends Utilities
             $this->errorMessage = $e;
             trigger_error($e);
         }
-        $this->util = new Utilities();
     }
 
     public function __get(string $name) : mixed
@@ -164,9 +162,9 @@ class Database extends Utilities
         }
     }
 
-    public function insertFromArray(array $params) : Database
+    public function insertFromArray(array $params) : self
     {
-        $table = $params["table"];
+        $table = Utilities::escape_backsticks($params["table"]);
 
         $columns = '(';
         $defaultValues = '(';
@@ -175,7 +173,7 @@ class Database extends Utilities
         $multiple = 0;
 
         $columnInfo = $this->getTableInfo($table);
-        $rotatedValues = $this->util->isAssoc($params["values"]) ? $params["values"] : $this->util->rotateArray($params["values"]);
+        $rotatedValues = Utilities::array_assoc($params["values"]) ? $params["values"] : Utilities::array_rotate($params["values"]);
         //no memory leaks here boys
         unset($params);
 
@@ -185,22 +183,26 @@ class Database extends Utilities
         ksort($columnInfo);
         ksort($rotatedValues);
 
-        $columnsNameFromParams = array_keys($rotatedValues);
+        $columnsName = array_keys($rotatedValues);
         //For each column of the table, check if the name fits the column of the data. Also checks for autoincremented primary key
         //Could use array_intersect_key , but that would be two loop, because i would still need to check for the primary key
         $newValues = [];
         foreach ($columnInfo as $columnKey => $columnValue) {
-            if (in_array($columnKey, $columnsNameFromParams)) {
-                $columnsOtherForQuery .= $this->util->escape_backsticks($columnKey) . ',';
+            if (in_array($columnKey, $columnsName)) {
+                $columnsOtherForQuery .= Utilities::escape_backsticks($columnKey) . ',';
                 $newValues[$columnKey] = $rotatedValues[$columnKey];
             }
             elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
-                $columns .= $this->util->escape_backsticks($columnKey) . ',';
+                $columns .= Utilities::escape_backsticks($columnKey) . ',';
                 $defaultValues .= "null,";
             }
         }
         $columns = substr($columns . $columnsOtherForQuery, 0, -1) . ')';
-        $newValues = $this->util->checkForSubArray($newValues) ? $this->util->rotateArray($newValues) : $newValues;
+
+
+        if(Utilities::array_contains_only_array($newValues)){
+            $newValues = Utilities::array_rotate($newValues);
+        }
         $valuesToInsert .= $defaultValues;
         foreach ($newValues as $field => $value) {
             if (is_array($value)) {
@@ -219,7 +221,7 @@ class Database extends Utilities
         }
 
         $valuesToInsert = substr($valuesToInsert, 0, -1);
-        if (!$multiple) {
+        if($multiple === 0){
             $valuesToInsert .= ')';
         }
 
@@ -234,12 +236,12 @@ class Database extends Utilities
         $incrementation = 0;
         $where = " WHERE ";
         foreach ($params["values"] as $field => $value) {
-            $set .= $this->util->escape_backsticks($field) . " = " . ":$field$incrementation,";
+            $set .= Utilities::escape_backsticks($field) . " = " . ":$field$incrementation,";
             $this->currentParams[":$field$incrementation"] = empty($value) ? null : $value;
             $incrementation++;
         }
         foreach ($params["where"] as $field => $value) {
-            $where .= $this->util->escape_backsticks($field) . " = " . ":$field$incrementation ";
+            $where .= Utilities::escape_backsticks($field) . " = " . ":$field$incrementation ";
             $this->currentParams[":$field$incrementation"] = empty($value) ? null : $value;
             $incrementation++;
         }
@@ -272,7 +274,7 @@ class Database extends Utilities
         return $columns;
     }
 
-    private function setString(string $field, mixed $value, int $increment = null) : string
+    private function setString(string $field, $value, int $increment = null) : string
     {
         $this->currentParams[":$field" . $increment] = empty($value) ? null : $value;
         return ":$field" . "$increment,";
@@ -305,7 +307,7 @@ class Database extends Utilities
     public function delete(string $table, array $where = null)
     {
         $query = "DELETE FROM " . $this->escape_backsticks($table);
-        if ($this->util->array_empty($where)) {
+        if (Utilities::array_empty($where)) {
             $query .= " WHERE ";
             if (count($where) === 1) {
 
@@ -324,10 +326,10 @@ class Database extends Utilities
             else {
                 $tempValue = !empty($fValue) ? $fValue : $fName;
                 $tempName = !is_int($fName) ? $fName : $fValue;
-                $query .= $this->escapeBackSticks($tempName) . " AS " . $this->escapeBackSticks($tempValue) . ", ";
+                $query .= Utilities::escape_backsticks($tempName) . " AS " .Utilities::escape_backsticks($tempValue) . ", ";
             }
         }
-        $query = substr($query, 0, -2) . " FROM " . $this->escapeBackSticks($table);
+        $query = substr($query, 0, -2) . " FROM " . Utilities::escape_backsticks($table);
         echo $query;
     }
 

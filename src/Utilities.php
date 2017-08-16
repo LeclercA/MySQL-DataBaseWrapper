@@ -53,7 +53,7 @@ class Utilities
      * @param string $var
      * @return string The escaped string
      */
-    public function escape_backsticks(string $var) : string
+    public static function escape_backsticks(string $var) : string
     {
         $string = explode(".", $var);
         foreach ($string as $key => $singleString) {
@@ -62,7 +62,7 @@ class Utilities
         return implode('.', $string);
     }
 
-    public function round_number_two_decimal(string $val) : string
+    public static function round_number_two_decimal(string $val) : string
     {
         return number_format(round($val, 2), 2, '.', '');
     }
@@ -71,7 +71,7 @@ class Utilities
      * @param int $length The length of the random word. Default : 10
      * @return string The random word generated 
      */
-    public function random_string(int $length = 10) : string
+    public static function random_string(int $length = 10) : string
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $randomString = '';
@@ -86,7 +86,7 @@ class Utilities
      * @param array $data The data to create marks from
      * @return string The string containing the interrogation marks
      */
-    public function create_marks(array $data) : string
+    public static function create_marks(array $data) : string
     {
         return str_repeat('?,', count($data) - 1) . '?';
     }
@@ -96,7 +96,7 @@ class Utilities
      * @param string $var The string to remove the special characters from
      * @return string The string after removing the special characters
      */
-    public function remove_special_chars(string $var) : string
+    public static function remove_special_chars(string $var) : string
     {
         $specialChars = [
             '&amp;' => 'and', '@' => 'at', '©' => 'c', '®' => 'r', 'À' => 'a',
@@ -161,7 +161,7 @@ class Utilities
      * @param array $array To array to evaluate
      * @return bool Return true if the $array is empty, return true if not 
      */
-    public function array_empty(array $array) : bool
+    public static function array_empty(array $array) : bool
     {
         return strlen(implode($array)) === 0;
     }

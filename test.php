@@ -1,5 +1,5 @@
 <?php
-include "database.php";
+include "src/Database.php";
 $options = [
     "dbname" => "employe",
     "host" => "localhost",
@@ -28,7 +28,7 @@ $testArrayReverse = [
 ];
 
 $testArrayReverse2 = ["name" => "Bob", "description" => 6];
-
+print_r($db->insertFromArray(["table"=> "employes","values"=>$testArrayReverse]));
 #echo $db->escapeBackSticks("employe.employes");
 
 $db->select("employe.employes",["name","*"]);
