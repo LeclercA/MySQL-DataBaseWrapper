@@ -9,7 +9,7 @@ class Utilities
      * @param array $array The array to verify
      * @return boolean true if array is associative, false if not.
      */
-    public function is_assoc(array $array) : bool
+    public static function array_assoc(array $array) : bool
     {
         return is_array($array) && array_keys($array) !== range(0, count($array) - 1);
     }
@@ -19,7 +19,7 @@ class Utilities
      * @param array $array The array to rotate
      * @return array The rotated array
      */
-    public function rotate_array(array $array) : array
+    public static function array_rotate(array $array) : array
     {
         $newArray = [];
         foreach ($array as $reverseKey => $reverseValue) {
@@ -35,7 +35,7 @@ class Utilities
      * @param array $array The array to check
      * @return bool true if the array contains only array, false otherwise
      */
-    public function contains_only_array(array $array) : bool
+    public static function array_contains_only_array(array $array) : bool
     {
         $i = 0;
         $notFound = true;
