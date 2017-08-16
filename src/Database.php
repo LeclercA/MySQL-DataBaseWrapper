@@ -1,10 +1,9 @@
 <?php
 
 declare (strict_types = 1);
-
 require 'Utilities.php';
-class Database
-{
+
+class Database {
 
     public $debugMode = false;
     private $options = [
@@ -24,18 +23,13 @@ class Database
     private $currentParams;
     private $lastQuery;
     private $currentQuery;
-    private $keyword;
-
+    private $util;
 
     const ALL = 0;
     const FIRST_ROW = 1;
     const COLUMN = 2;
 
-
-
-    public function __construct(array $options = null)
-    {
-
+    public function __construct(array $options = null) {
         $connectionString = $this->dbType . ":";
         foreach ($options as $key => $value) {
             if (array_key_exists($key, $this->options)) {
@@ -53,10 +47,10 @@ class Database
             $this->errorMessage = $e;
             trigger_error($e);
         }
+        $this->util = new Utilities();
     }
 
-    public function __get(string $name) : mixed
-    {
+    public function __get(string $name): mixed {
         switch ($name) {
             case "data" :
                 return $this->data;
@@ -69,8 +63,7 @@ class Database
         }
     }
 
-    public function execute(string $query = null, array $params = null)
-    {
+    public function execute(string $query = null, array $params = null): self {
         if ($this->connection) {
             if (!empty($query)) {
                 $this->currentQuery = $query;
@@ -78,82 +71,50 @@ class Database
             if (empty($this->currentParams)) {
                 $this->currentParams = $params;
             }
-            $this->keyword = strtolower(explode(' ', $this->currentQuery)[0]);
-            if ($this->keyword === "select" || $this->keyword === "show") {
-                $this->executeSelect();
+            if (in_array(strtolower(explode(' ', $this->currentQuery)[0]), ["select","show"])) {
+                return $this->executeSelect();
             }
-            else {
-                $this->executeUpdate();
-            }
-            return $this;
-        }
-        else {
-            trigger_error("No connection to the database, can't do queries");
+            return $this->executeUpdate();
         }
     }
 
-    public function getResult(self $fetchMethod = null)
-    {
+    public function getResult(self $fetchMethod = null) {
         $this->displayErrorMessage();
-        if (empty($this->errorMessage)) {
-            if ($this->keyword === "select" || $this->keyword === "show") {
-                try {
-                    if ($fetchMethod === "firstRow") {
-                        $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
-                    }
-                    else {
-                        $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
-                    }
-                } catch (Exception $e) {
-                    $this->errorMessage = $e;
-                    trigger_error($e);
-                }
-                finally {
-                    $this->resetParams();
-                }
-            }
-            return $this->data;
+        $this->resetParams();
+        if ($fetchMethod === Database::FIRST_ROW) {
+            return $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
+        } elseif ($fetchMethod === Database::COLUMN) {
+            return $this->data = $this->PDO->fetch(PDO::FETCH_COLUMN);
+        }
+        return $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
+        
+    }
+
+    private function executeSelect() {
+        if ($this->currentQuery !== $this->lastQuery) {
+            $this->PDO = $this->connection->prepare($this->currentQuery);
+        }
+        if (!$this->PDO) {
+            $this->errorMessage = $this->PDO->errorInfo();
+        } else {
+            $this->PDO->execute($this->currentParams);
         }
     }
 
-    private function executeSelect()
-    {
-        try {
-            if ($this->currentQuery !== $this->lastQuery) {
-                $this->PDO = $this->connection->prepare($this->currentQuery);
-            }
-            if (!$this->PDO) {
-                $this->errorMessage = $this->PDO->errorInfo();
-            }
-            else {
-                $this->PDO->execute($this->currentParams);
-            }
-        } catch (Exception $e) {
-            $this->errorMessage = $e;
-            trigger_error($e);
+    private function executeUpdate() {
+        if ($this->currentQuery !== $this->lastQuery) {
+            $this->PDO = $this->connection->prepare($this->currentQuery);
+        }
+        if (!$this->PDO) {
+            $this->errorMessage = $this->connection->errorInfo();
+        } else {
+            $params = $this->currentParams;
+            $this->resetParams();
+            return $this->data = $this->PDO->execute($params);
         }
     }
 
-    private function executeUpdate()
-    {
-        try {
-            if ($this->currentQuery !== $this->lastQuery) {
-                $this->PDO = $this->connection->prepare($this->currentQuery);
-            }
-            if (!$this->PDO) {
-                $this->errorMessage = $this->connection->errorInfo();
-            }
-            else {
-                $this->data = $this->PDO->execute($this->currentParams);
-            }
-        } catch (Exception $e) {
-            $this->errorMessage = $e;
-            trigger_error($e);
-        }
-    }
-
-    private function displayErrorMessage()
-    {
+    private function displayErrorMessage() {
         if ($this->errorMessage && $this->debugMode) {
             print_r($this->errorMessage);
             echo "QUERY => " . $this->currentQuery;
@@ -162,46 +123,38 @@ class Database
         }
     }
 
-    public function insertFromArray(array $params) : self
-    {
-        $table = Utilities::escape_backsticks($params["table"]);
-
+    public function insertFromArray(array $params): self {
+        $table = $this->$util->escape_backsticks($params["table"]);
         $columns = '(';
         $defaultValues = '(';
         $columnsOtherForQuery = "";
         $valuesToInsert = "";
         $multiple = 0;
-
         $columnInfo = $this->getTableInfo($table);
-        $rotatedValues = Utilities::array_assoc($params["values"]) ? $params["values"] : Utilities::array_rotate($params["values"]);
+        $rotatedValues = $this->$util->array_assoc($params["values"]) ? $params["values"] : $this->$util->array_rotate($params["values"]);
         //no memory leaks here boys
         unset($params);
-
         //Having the same order is crucial. Sorting them by the key
         $columnInfo = array_change_key_case($columnInfo, CASE_LOWER);
         $rotatedValues = array_change_key_case($rotatedValues, CASE_LOWER);
         ksort($columnInfo);
         ksort($rotatedValues);
-
         $columnsName = array_keys($rotatedValues);
         //For each column of the table, check if the name fits the column of the data. Also checks for autoincremented primary key
         //Could use array_intersect_key , but that would be two loop, because i would still need to check for the primary key
         $newValues = [];
         foreach ($columnInfo as $columnKey => $columnValue) {
             if (in_array($columnKey, $columnsName)) {
-                $columnsOtherForQuery .= Utilities::escape_backsticks($columnKey) . ',';
+                $columnsOtherForQuery .= $this->$util->escape_backsticks($columnKey) . ',';
                 $newValues[$columnKey] = $rotatedValues[$columnKey];
-            }
-            elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
-                $columns .= Utilities::escape_backsticks($columnKey) . ',';
+            } elseif ($columnValue["primaryKey"] && $columnValue["autoIncrement"]) {
+                $columns .= $this->$util->escape_backsticks($columnKey) . ',';
                 $defaultValues .= "null,";
             }
         }
         $columns = substr($columns . $columnsOtherForQuery, 0, -1) . ')';
-
-
-        if(Utilities::array_contains_only_array($newValues)){
-            $newValues = Utilities::array_rotate($newValues);
+        if ($this->$util->array_contains_only_array($newValues)) {
+            $newValues = $this->$util->array_rotate($newValues);
         }
         $valuesToInsert .= $defaultValues;
         foreach ($newValues as $field => $value) {
@@ -214,34 +167,30 @@ class Database
                 }
                 $valuesToInsert = substr($valuesToInsert, 0, -1) . "),";
                 $multiple++;
-            }
-            else {
+            } else {
                 $valuesToInsert .= $this->setString($field, $value, 0);
             }
         }
-
         $valuesToInsert = substr($valuesToInsert, 0, -1);
-        if($multiple === 0){
+        if ($multiple === 0) {
             $valuesToInsert .= ')';
         }
-
         $this->currentQuery = "INSERT INTO $table $columns VALUES $valuesToInsert";
         return $this;
     }
 
-    public function updateFromArray(array $params) : Database
-    {
+    public function updateFromArray(array $params): Database {
         $query = "UPDATE " . $params["table"];
         $set = " SET ";
         $incrementation = 0;
         $where = " WHERE ";
         foreach ($params["values"] as $field => $value) {
-            $set .= Utilities::escape_backsticks($field) . " = " . ":$field$incrementation,";
+            $set .= $this->$util->escape_backsticks($field) . " = " . ":$field$incrementation,";
             $this->currentParams[":$field$incrementation"] = empty($value) ? null : $value;
             $incrementation++;
         }
         foreach ($params["where"] as $field => $value) {
-            $where .= Utilities::escape_backsticks($field) . " = " . ":$field$incrementation ";
+            $where .= $this->$util->escape_backsticks($field) . " = " . ":$field$incrementation ";
             $this->currentParams[":$field$incrementation"] = empty($value) ? null : $value;
             $incrementation++;
         }
@@ -251,8 +200,7 @@ class Database
         return $this;
     }
 
-    private function resetParams()
-    {
+    private function resetParams() {
         $this->lastQuery = $this->currentQuery;
         $this->currentQuery = null;
         $this->currentParams = null;
@@ -260,8 +208,7 @@ class Database
         $this->errorMessage = null;
     }
 
-    private function getTableInfo(string $table) : array
-    {
+    private function getTableInfo(string $table): array {
         //can't prepare statement with table name
         $info = $this->execute("SHOW COLUMNS FROM $table")->getResult();
         $columns = [];
@@ -274,14 +221,12 @@ class Database
         return $columns;
     }
 
-    private function setString(string $field, $value, int $increment = null) : string
-    {
+    private function setString(string $field, $value, int $increment = null): string {
         $this->currentParams[":$field" . $increment] = empty($value) ? null : $value;
         return ":$field" . "$increment,";
     }
 
-    public function createFormatedQuery(string $query = null, array $params = null) : string
-    {
+    public function createFormatedQuery(string $query = null, array $params = null): string {
         $query = empty($query) ? $this->currentQuery : $query;
         $params = empty($params) ? $this->currentParams : $params;
         if (!empty($query) && !empty($params)) {
@@ -291,50 +236,43 @@ class Database
                 }
                 if (substr($key, 0, 1) === ':') {
                     $query = str_replace($key, $value, $query);
-                }
-                else {
+                } else {
                     $query = substr_replace($query, $value . ",", strpos($query, "?"), strlen($value));
                 }
             }
             return $query;
-        }
-        else {
+        } else {
             return "Nothing to evaluate";
         }
     }
 
-
-    public function delete(string $table, array $where = null)
-    {
+    public function delete(string $table, array $where = null) {
         $query = "DELETE FROM " . $this->escape_backsticks($table);
-        if (Utilities::array_empty($where)) {
+        if ($this->$util->array_empty($where)) {
             $query .= " WHERE ";
             if (count($where) === 1) {
-
+                
             }
         }
         return $this;
     }
 
-    public function select($table, $fields, $condition = null)
-    {
+    public function select($table, $fields, $condition = null) {
         $query = "SELECT ";
         foreach ($fields as $fName => $fValue) {
             if (strpos($fValue, '*') !== false) {
                 $query .= '*, ';
-            }
-            else {
+            } else {
                 $tempValue = !empty($fValue) ? $fValue : $fName;
                 $tempName = !is_int($fName) ? $fName : $fValue;
-                $query .= Utilities::escape_backsticks($tempName) . " AS " .Utilities::escape_backsticks($tempValue) . ", ";
+                $query .= $this->$util->escape_backsticks($tempName) . " AS " . $this->$util->escape_backsticks($tempValue) . ", ";
             }
         }
-        $query = substr($query, 0, -2) . " FROM " . Utilities::escape_backsticks($table);
+        $query = substr($query, 0, -2) . " FROM " . $this->$util->escape_backsticks($table);
         echo $query;
     }
 
 }
-
 
 $command = [
     "ALTER" => ["DATABASE", "EVENT", "FUNCTION", "INSTANCE", "LOGFILE GROUP", "PROCEDURE", "SERVER", "TABLE", "TABLENAME", "VIEW"],
@@ -343,7 +281,6 @@ $command = [
     "RENAME" => ["TABLE"],
     "TRUNCATE" => ["TABLE"]
 ];
-
 $command = [
     "CALL",
     "DELETE",
