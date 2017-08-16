@@ -71,7 +71,7 @@ class Database {
             if (empty($this->currentParams)) {
                 $this->currentParams = $params;
             }
-            if (in_array(strtolower(explode(' ', $this->currentQuery)[0]), ["select","show"])) {
+            if (in_array(strtolower(explode(' ', $this->currentQuery)[0]), ["select", "show"])) {
                 return $this->executeSelect();
             }
             return $this->executeUpdate();
@@ -87,7 +87,6 @@ class Database {
             return $this->data = $this->PDO->fetch(PDO::FETCH_COLUMN);
         }
         return $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
-        
     }
 
     private function executeSelect() {
@@ -117,9 +116,8 @@ class Database {
     private function displayErrorMessage() {
         if ($this->errorMessage && $this->debugMode) {
             print_r($this->errorMessage);
-            echo "QUERY => " . $this->currentQuery;
+            echo htmlentities("QUERY => " . $this->currentQuery);
             print_r($this->currentParams);
-            trigger_error($this->errorMessage[0]);
         }
     }
 
@@ -179,7 +177,7 @@ class Database {
         return $this;
     }
 
-    public function updateFromArray(array $params): Database {
+    public function updateFromArray(array $params): self {
         $query = "UPDATE " . $params["table"];
         $set = " SET ";
         $incrementation = 0;
@@ -212,9 +210,9 @@ class Database {
         //can't prepare statement with table name
         $info = $this->execute("SHOW COLUMNS FROM $table")->getResult();
         $columns = [];
-        foreach ($info as $key => $value) {
+        foreach ($info as $value) {
             $name = strtolower($value["Field"]);
-            $columns[$name]["type"] = explode('(', $value["Type"])[0];
+            $columns[$name]["type"] = $value["Type"];
             $columns[$name]["primaryKey"] = $value["Key"] === "PRI";
             $columns[$name]["autoIncrement"] = $value["Extra"] === "auto_increment";
         }
@@ -241,14 +239,13 @@ class Database {
                 }
             }
             return $query;
-        } else {
-            return "Nothing to evaluate";
         }
+        return "Nothing to evaluate";
     }
 
     public function delete(string $table, array $where = null) {
         $query = "DELETE FROM " . $this->escape_backsticks($table);
-        if ($this->$util->array_empty($where)) {
+        if ($this->util->array_empty($where)) {
             $query .= " WHERE ";
             if (count($where) === 1) {
                 
@@ -269,7 +266,7 @@ class Database {
             }
         }
         $query = substr($query, 0, -2) . " FROM " . $this->$util->escape_backsticks($table);
-        echo $query;
+        echo htmlentities($query);
     }
 
 }
