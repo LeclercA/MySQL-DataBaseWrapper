@@ -5,7 +5,6 @@ require 'Utilities.php';
 
 class Database {
 
-    public $debugMode = false;
     private $options = [
         "dbname" => "",
         "host" => "localhost",
@@ -18,8 +17,6 @@ class Database {
     private $data;
     private $connection;
     private $PDO;
-    private $errorMessage;
-    private $lastErrorMessage;
     private $currentParams;
     private $lastQuery;
     private $currentQuery;
@@ -41,12 +38,8 @@ class Database {
         }
         $connectionString = substr($connectionString, 0, -1);
         $params = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false];
-        try {
-            $this->connection = new PDO($connectionString, $this->options["user"], $this->options["password"], $params);
-        } catch (PDOException $e) {
-            $this->errorMessage = $e;
-            trigger_error($e);
-        }
+        $this->connection = new PDO($connectionString, $this->options["user"], $this->options["password"], $params);
+
         $this->util = new Utilities();
     }
 
@@ -58,8 +51,6 @@ class Database {
                 return $this->connection->lastInsertId();
             case "rows" :
                 return $this->PDO->rowCount();
-            case "errorMessage" :
-                return $this->lastErrorMessage;
         }
     }
 
@@ -78,13 +69,12 @@ class Database {
         }
     }
 
-    public function getResult(self $fetchMethod = null) {
-        $this->displayErrorMessage();
+    public function getResult(self $fetchMethod = null, int $column = 0) {
         $this->resetParams();
         if ($fetchMethod === Database::FIRST_ROW) {
             return $this->data = $this->PDO->fetch(PDO::FETCH_ASSOC);
         } elseif ($fetchMethod === Database::COLUMN) {
-            return $this->data = $this->PDO->fetch(PDO::FETCH_COLUMN);
+            return $this->data = $this->PDO->fetchColumn($column);
         }
         return $this->data = $this->PDO->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -93,9 +83,7 @@ class Database {
         if ($this->currentQuery !== $this->lastQuery) {
             $this->PDO = $this->connection->prepare($this->currentQuery);
         }
-        if (!$this->PDO) {
-            $this->errorMessage = $this->PDO->errorInfo();
-        } else {
+        if ($this->PDO) {
             $this->PDO->execute($this->currentParams);
         }
     }
@@ -104,20 +92,10 @@ class Database {
         if ($this->currentQuery !== $this->lastQuery) {
             $this->PDO = $this->connection->prepare($this->currentQuery);
         }
-        if (!$this->PDO) {
-            $this->errorMessage = $this->connection->errorInfo();
-        } else {
+        if ($this->PDO) {
             $params = $this->currentParams;
             $this->resetParams();
             return $this->data = $this->PDO->execute($params);
-        }
-    }
-
-    private function displayErrorMessage() {
-        if ($this->errorMessage && $this->debugMode) {
-            print_r($this->errorMessage);
-            echo htmlentities("QUERY => " . $this->currentQuery);
-            print_r($this->currentParams);
         }
     }
 
@@ -202,7 +180,6 @@ class Database {
         $this->lastQuery = $this->currentQuery;
         $this->currentQuery = null;
         $this->currentParams = null;
-        $this->lastErrorMessage = $this->errorMessage;
         $this->errorMessage = null;
     }
 
