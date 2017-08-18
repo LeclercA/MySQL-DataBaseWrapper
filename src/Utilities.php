@@ -3,7 +3,9 @@ declare (strict_types = 1);
 
 class Utilities
 {
-
+    
+    const EVEN = 0;
+    const ODD = 1;
     /**
      * Verify is the array provided is associative or not
      * @param array $array The array to verify
@@ -164,6 +166,20 @@ class Utilities
     public static function array_empty(array $array) : bool
     {
         return strlen(implode($array)) === 0;
+    }
+    
+    /**
+     * Check a string and a new string composed of the characters at odd or even position
+     * @param string $stringToCheck The string to frag
+     * @param self $method Utilities::EVEN to have the charracters at even position, Utilities::ODD to have charcarters at odd potision
+     * @return string The fragmented string
+     */
+    public function strfrag(string $stringToCheck, self $method = 0): string {
+        $stringToReturn = '';
+        for ($pos = $method; $pos < strlen($stringToCheck); $pos += 2) {
+            $stringToReturn .= $stringToCheck[$pos];
+        }
+        return $stringToReturn;
     }
 
 }
